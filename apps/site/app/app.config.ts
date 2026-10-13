@@ -12,10 +12,10 @@ export default defineAppConfig({
     logo: false,
   },
   socials: {
-    github: 'https://github.com/visual-regression/visual-regression',
+    github: 'https://github.com/Visual-Regression/visual-regression',
   },
   github: {
-    url: 'https://github.com/visual-regression/visual-regression',
+    url: 'https://github.com/Visual-Regression/visual-regression',
     branch: 'main',
     rootDir: 'apps/site',
   },
@@ -27,7 +27,7 @@ export default defineAppConfig({
         {
           icon: 'i-lucide-github',
           label: 'Source on GitHub',
-          to: 'https://github.com/visual-regression/visual-regression',
+          to: 'https://github.com/Visual-Regression/visual-regression',
           target: '_blank',
         },
       ],

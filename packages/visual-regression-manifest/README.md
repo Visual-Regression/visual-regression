@@ -5,7 +5,7 @@
   <a href="https://www.npmjs.com/package/visual-regression-manifest">
     <img src="https://img.shields.io/npm/v/visual-regression-manifest.svg" alt="NPM version badge">
   </a>
-  <a href="https://github.com/visual-regression/visual-regression/blob/main/LICENSE">
+  <a href="https://github.com/Visual-Regression/visual-regression/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/visual-regression/visual-regression.svg" alt="license MIT badge">
   </a>
 </p>
