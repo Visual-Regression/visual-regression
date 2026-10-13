@@ -1,0 +1,115 @@
+name: CI
+# Always triggered, because the required status checks (lint, test-integration-coverage) must
+# report on every PR: a workflow skipped by `paths-ignore` leaves them pending and blocks the merge.
+# The `changes` job decides instead, and a job skipped by `if` counts as passing.
+# The site has its own workflow (site.yml) with the opposite path filter.
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  # The package jobs never need the site or its Nuxt toolchain (billed minutes).
+  PACKAGES_INSTALL_FILTER: --filter '!./apps/**'
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      # On push the filter diffs commits locally; on pull_request it uses the API.
+      - uses: actions/checkout@v7
+        if: github.event_name != 'pull_request'
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          predicate-quantifier: every
+          filters: |
+            packages:
+              - '**'
+              - '!apps/**'
+              - '!.github/workflows/site.yml'
+
+  lint:
+    name: lint
+    needs: [changes]
+    if: ${{ needs.changes.outputs.packages == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          # the only job that saves the cache (fastest job, never on the critical path)
+          save-cache: 'true'
+          install-filter: ${{ env.PACKAGES_INSTALL_FILTER }}
+      - run: pnpm lint:ci
+      - run: pnpm format:ci
+
+  test-integration-coverage:
+    name: test-integration-coverage
+    needs: [changes]
+    if: ${{ needs.changes.outputs.packages == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          install-filter: ${{ env.PACKAGES_INSTALL_FILTER }}
+      - run: pnpm build
+      - name: Test integration (with coverage)
+        run: pnpm test:integration:ci
+
+  prepare-release:
+    name: detect changes, bump package versions, generate changelog and commit it to main branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint, test-integration-coverage]
+    if: ${{ github.actor != 'dependabot[bot]' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - uses: googleapis/release-please-action@v5.0.0
+        id: release
+        with:
+          command: manifest
+          default-branch: main
+          monorepo-tags: true
+
+  release:
+    name: release (stable when release-please cut one, otherwise a canary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [prepare-release]
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC) + provenance
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          install-filter: ${{ env.PACKAGES_INSTALL_FILTER }}
+      - name: Build packages to get cross-references working 🔧
+        run: pnpm build
+      - name: Release packages under latest
+        if: ${{ needs.prepare-release.outputs.releases_created == 'true' }}
+        run: node scripts/publish.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish a canary of this commit under the canary dist-tag
+        if: ${{ needs.prepare-release.outputs.releases_created != 'true' }}
+        run: node scripts/publish.mjs --canary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

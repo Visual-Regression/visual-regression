@@ -1,0 +1,38 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build output
+dist
+*.tsbuildinfo
+*.tgz
+
+# Coverage
+coverage
+*.lcov
+
+# Caches
+.eslintcache
+.cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Nuxt
+.nuxt
+.output
+.data
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
