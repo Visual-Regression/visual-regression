@@ -1,0 +1,22 @@
+name: cypress-visual-regression
+website: https://github.com/cypress-visual-regression/cypress-visual-regression
+summary: Cypress plugin with a base-generation mode and a regression mode, writing base, actual and diff images into three sibling folders.
+category: runner-integration
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Cypress
+diffEngine: pixelmatch, errorThreshold as a ratio
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: converter
+notes:
+  - The comparison result (mismatched pixels, percentage) is yielded to the test, not written to a file.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/cypress-visual-regression/cypress-visual-regression

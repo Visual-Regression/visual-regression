@@ -1,0 +1,28 @@
+name: Applitools Eyes
+website: https://applitools.com
+summary: Hosted visual AI testing with SDKs for most runners and an Images SDK that accepts plain screenshots.
+category: hosted-review
+openSource: false
+selfHostable: false
+hosting: cloud
+runners:
+  - Selenium
+  - Playwright
+  - Cypress
+  - WebdriverIO
+  - Storybook
+  - any (eyes-images SDK)
+diffEngine: server-side perceptual comparison with several match levels
+reviewSurface:
+  - web-app
+  - pr
+baselineStorage: service
+pricingModel: custom
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - The Ultrafast Grid renders a captured DOM in many browsers and viewports server-side.
+lastVerified: '2026-10-13'
+sources:
+  - https://www.npmjs.com/package/@applitools/eyes-images
+  - https://applitools.com/docs/eyes/sdks/images-js/eyes

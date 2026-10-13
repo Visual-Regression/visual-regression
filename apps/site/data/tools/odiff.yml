@@ -1,0 +1,22 @@
+name: odiff
+website: https://github.com/dmtrKovalenko/odiff
+summary: Fast native image comparison with a CLI and Node bindings, used by Lost Pixel and others where pixelmatch is too slow.
+category: diff-engine
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - any (CLI or library)
+diffEngine: per-pixel YIQ colour distance with a threshold, anti-aliasing and ignore regions
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: none
+manifestSupport: none
+notes:
+  - The CLI exit code and output report the number of differing pixels and the percentage.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/dmtrKovalenko/odiff

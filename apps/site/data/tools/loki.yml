@@ -1,0 +1,22 @@
+name: Loki
+website: https://github.com/oblador/loki
+summary: Visual regression for Storybook stories, rendered in Chrome (local, Docker or AWS Lambda) or iOS and Android simulators.
+category: runner-integration
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Storybook
+diffEngine: pixelmatch or looks-same, configurable per target
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - Writes .loki/reference, .loki/current and .loki/difference folders; no machine-readable summary was found.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/oblador/loki

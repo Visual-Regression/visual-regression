@@ -1,0 +1,25 @@
+name: Flutter golden tests
+website: https://api.flutter.dev/flutter/flutter_test/matchesGoldenFile.html
+summary: Flutter's built-in matchesGoldenFile matcher compares a widget's rendering against a golden PNG in the repository.
+category: mobile-native
+aliases:
+  - matchesGoldenFile
+openSource: true
+license: BSD-3-Clause
+selfHostable: true
+hosting: local
+runners:
+  - flutter test
+diffEngine: exact pixel comparison by default; the comparator is pluggable
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - A failure writes _masterImage, _testImage, _isolatedDiff and _maskedDiff images next to the golden under a failures folder.
+  - Rendering differs between platforms, so goldens are usually generated on one OS, often in CI.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/flutter/flutter/blob/master/packages/flutter_test/lib/src/_goldens_io.dart

@@ -1,0 +1,23 @@
+name: BackstopJS
+website: https://github.com/garris/BackstopJS
+summary: Standalone tool that screenshots a list of URLs and selectors in Puppeteer or Playwright, compares them with Resemble.js and writes HTML, JSON and JUnit reports.
+category: runner-integration
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Standalone (Puppeteer or Playwright engine)
+diffEngine: Resemble.js, misMatchThreshold in percent
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: json-report
+manifestSupport: converter
+notes:
+  - The HTML report has an approve button that copies test bitmaps over references.
+  - Scenarios are configured in backstop.json, not written as tests.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/garris/BackstopJS

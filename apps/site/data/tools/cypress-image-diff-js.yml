@@ -1,0 +1,22 @@
+name: cypress-image-diff-js
+website: https://github.com/uktrade/cypress-image-diff
+summary: Cypress plugin that keeps baseline, comparison and diff folders and writes a JSON plus HTML report per run.
+category: runner-integration
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Cypress
+diffEngine: pixelmatch, failureThreshold as a ratio
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: json-report
+manifestSupport: generic
+notes:
+  - The JSON report lists suites and tests with baselinePath, comparisonPath, diffPath, percentage and failureThreshold.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/uktrade/cypress-image-diff

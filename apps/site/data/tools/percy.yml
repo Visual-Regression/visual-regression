@@ -1,0 +1,31 @@
+name: Percy
+website: https://www.browserstack.com/percy
+summary: BrowserStack's hosted visual testing; SDKs capture DOM snapshots that are rendered in the service, and percy upload takes plain images.
+category: hosted-review
+aliases:
+  - BrowserStack Percy
+openSource: false
+license: CLI under MIT, service proprietary
+selfHostable: false
+hosting: cloud
+runners:
+  - Cypress
+  - Playwright
+  - Puppeteer
+  - Selenium
+  - Storybook
+  - any (percy upload of a folder)
+diffEngine: server-side, with a configurable diff sensitivity
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: freemium
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - DOM snapshots are re-rendered in Percy's browsers, so cross-browser results come without running the tests again.
+lastVerified: '2026-10-13'
+sources:
+  - https://www.browserstack.com/docs/percy/references/commands
+  - https://github.com/percy/cli

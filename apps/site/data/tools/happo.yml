@@ -1,0 +1,28 @@
+name: Happo
+website: https://happo.io
+summary: Hosted cross-browser screenshot review with a REST API that accepts images by hash and compares reports by commit.
+category: hosted-review
+openSource: false
+selfHostable: true
+hosting: cloud
+runners:
+  - Storybook
+  - Playwright
+  - Cypress
+  - Puppeteer
+  - any (image API)
+diffEngine: server-side
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: per-screenshot
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - An on-premise bundle is sold for teams that need to keep images inside their network.
+lastVerified: '2026-10-13'
+sources:
+  - https://happo.io/docs/api
+  - https://docs.happo.io/docs/image-api
+  - https://happo.io/blog/total-control-and-security-with-happo-on-premise-solutions

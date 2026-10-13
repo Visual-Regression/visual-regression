@@ -1,0 +1,22 @@
+name: Shot
+website: https://github.com/pedrovgs/Shot
+summary: Gradle plugin that records and verifies Android screenshots on a device or emulator and builds an HTML verification report.
+category: mobile-native
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local
+runners:
+  - Android instrumentation tests
+diffEngine: pixel comparison with a tolerance
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - A metadata.json accompanies the screenshots; its shape was not verified for this comparison.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/pedrovgs/Shot

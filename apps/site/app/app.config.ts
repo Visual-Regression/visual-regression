@@ -11,9 +11,6 @@ export default defineAppConfig({
     title: 'visual-regression.dev',
     logo: false,
   },
-  socials: {
-    github: 'https://github.com/Visual-Regression/visual-regression',
-  },
   github: {
     url: 'https://github.com/Visual-Regression/visual-regression',
     branch: 'main',

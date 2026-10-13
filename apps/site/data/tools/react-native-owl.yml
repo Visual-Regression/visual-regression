@@ -1,0 +1,22 @@
+name: React Native Owl
+website: https://github.com/FormidableLabs/react-native-owl
+summary: Visual regression for React Native apps on iOS and Android simulators, with baseline, latest and diff folders and an HTML report.
+category: mobile-native
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - React Native (Jest)
+diffEngine: pixel comparison
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - The documentation site was unreachable when this entry was checked; details come from the repository README.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/FormidableLabs/react-native-owl

@@ -7,6 +7,9 @@
     "dev": "nuxt dev",
     "build": "nuxt generate",
     "preview": "nuxt preview",
+    "sync": "node scripts/sync-manifest.mjs",
+    "predev": "node scripts/sync-manifest.mjs",
+    "prebuild": "node scripts/sync-manifest.mjs",
     "postinstall": "nuxt prepare",
     "format": "prettier --write .",
     "format:ci": "prettier --check ."
@@ -18,6 +21,8 @@
   },
   "devDependencies": {
     "@frsource/prettier-config": "^1.11.0",
+    "@nuxt/content": "^3.16.2",
+    "@nuxt/kit": "^4.6.1",
     "prettier": "3.9.9"
   }
 }

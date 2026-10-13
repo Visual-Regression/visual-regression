@@ -1,0 +1,27 @@
+name: Sauce Visual
+website: https://docs.saucelabs.com/visual-testing/
+summary: Sauce Labs' hosted visual testing; SDKs or a GraphQL API create a build, upload PNG snapshots and finish the build for review.
+category: hosted-review
+aliases:
+  - Screener
+openSource: false
+selfHostable: false
+hosting: cloud
+runners:
+  - Selenium
+  - Playwright
+  - Cypress
+  - WebdriverIO
+  - Storybook
+  - any (GraphQL API)
+diffEngine: server-side
+reviewSurface:
+  - web-app
+  - pr
+baselineStorage: service
+pricingModel: custom
+machineReadableResults: none-cloud
+manifestSupport: none
+lastVerified: '2026-10-13'
+sources:
+  - https://docs.saucelabs.com/visual-testing/workflows/api-lifecycle/

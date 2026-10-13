@@ -1,0 +1,24 @@
+name: cypress-image-snapshot
+website: https://github.com/simonsmith/cypress-image-snapshot
+summary: Cypress port of jest-image-snapshot; same snapshot and diff-output folders, driven from cy.matchImageSnapshot.
+category: runner-integration
+aliases:
+  - '@simonsmith/cypress-image-snapshot'
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Cypress
+diffEngine: jest-image-snapshot (pixelmatch or SSIM)
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: converter
+notes:
+  - Several forks exist; the maintained one at the time of writing is simonsmith/cypress-image-snapshot.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/simonsmith/cypress-image-snapshot

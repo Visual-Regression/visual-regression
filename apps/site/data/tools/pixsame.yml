@@ -1,0 +1,29 @@
+name: pixsame
+website: https://pixsame.com
+summary: Cypress plugin (Playwright in preparation) that compares screenshots in the runner, shows the diff in the Cypress UI, and writes the run manifest for review tooling.
+category: runner-integration
+aliases:
+  - '@pixsame/cypress-plugin-visual-regression-diff'
+  - '@frsource/cypress-plugin-visual-regression-diff'
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local-or-cloud
+runners:
+  - Cypress
+  - Playwright (in preparation)
+diffEngine: pixelmatch-style pixel comparison with a configurable threshold; pinned Docker renderer optional
+reviewSurface:
+  - local
+  - pr
+baselineStorage: repo
+pricingModel: freemium
+machineReadableResults: manifest
+manifestSupport: native
+notes:
+  - Maintained by the same team that runs this site; the comparison is written to be fair, not flattering.
+  - The GitHub App for approving baselines from a pull request and the hosted platform are announced, not released.
+lastVerified: '2026-10-13'
+sources:
+  - https://pixsame.com
+  - https://www.npmjs.com/package/@pixsame/cypress-plugin-visual-regression-diff

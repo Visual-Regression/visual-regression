@@ -1,0 +1,30 @@
+name: Argos
+website: https://argos-ci.com
+summary: Hosted review service that takes screenshots uploaded from CI, compares them against the reference branch and reports on the pull request.
+category: hosted-review
+openSource: true
+license: MIT (platform source), hosted service
+selfHostable: false
+hosting: cloud
+runners:
+  - Playwright
+  - Cypress
+  - Storybook
+  - Puppeteer
+  - WebdriverIO
+  - any (argos upload of a folder)
+diffEngine: server-side pixel comparison with a threshold option
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: freemium
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - argos upload takes a directory of PNG or JPEG files, the reference branch and parallel-run options; the diff happens in the service.
+  - The platform is open source; a documented self-hosting path was not found at the time of writing.
+lastVerified: '2026-10-13'
+sources:
+  - https://argos-ci.com/docs/argos-cli
+  - https://github.com/argos-ci/argos

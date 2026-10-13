@@ -1,0 +1,25 @@
+name: Chromatic
+website: https://www.chromatic.com
+summary: Hosted visual and interaction testing from the Storybook maintainers; it re-renders a Storybook build or Playwright and Cypress DOM archives in its own browsers.
+category: hosted-review
+openSource: false
+license: CLI under MIT, service proprietary
+selfHostable: false
+hosting: cloud
+runners:
+  - Storybook
+  - Playwright
+  - Cypress
+diffEngine: server-side, with a diff threshold per story
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: freemium
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - Takes a Storybook build directory or DOM archives, not screenshots; images you captured yourself cannot be uploaded.
+lastVerified: '2026-10-13'
+sources:
+  - https://www.chromatic.com/docs/cli/

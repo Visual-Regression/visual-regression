@@ -1,0 +1,22 @@
+name: Paparazzi
+website: https://github.com/cashapp/paparazzi
+summary: Renders Android layouts on the JVM without a device or emulator and verifies them against golden images in the repository.
+category: mobile-native
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local
+runners:
+  - JUnit (Android layouts and Compose)
+diffEngine: pixel comparison with a configurable max percent difference
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - Failures write delta images under build/paparazzi/failures and an HTML report; no JSON summary was found.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/cashapp/paparazzi

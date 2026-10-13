@@ -1,0 +1,26 @@
+name: Playwright toHaveScreenshot
+website: https://playwright.dev/docs/test-snapshots
+summary: Built-in screenshot assertion of Playwright Test; references live next to the tests, failures leave expected, actual and diff images in test-results.
+category: runner-integration
+aliases:
+  - '@playwright/test'
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local
+runners:
+  - Playwright
+diffEngine: pixelmatch (threshold, maxDiffPixels, maxDiffPixelRatio); ssim-cie94 comparator optional
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: json-report
+manifestSupport: converter
+notes:
+  - The JSON reporter lists the images as attachments named <name>-expected, -actual and -diff; a passing comparison leaves no trace.
+  - The HTML report shows the three images with a slider.
+lastVerified: '2026-10-13'
+sources:
+  - https://playwright.dev/docs/test-snapshots
+  - https://playwright.dev/docs/api/class-testresult

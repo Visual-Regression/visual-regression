@@ -1,0 +1,22 @@
+name: Meticulous
+website: https://www.meticulous.ai
+summary: Records user sessions through a script tag and replays them against new builds in the cloud, diffing the result; no screenshots are taken by the team.
+category: hosted-review
+openSource: false
+selfHostable: false
+hosting: cloud
+runners:
+  - none (session recording)
+diffEngine: server-side replay and comparison
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: custom
+machineReadableResults: none-cloud
+manifestSupport: none
+notes:
+  - Nothing to convert or upload; the approach is a different one from screenshot assertions.
+lastVerified: '2026-10-13'
+sources:
+  - https://www.meticulous.ai/how-it-works

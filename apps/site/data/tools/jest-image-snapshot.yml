@@ -1,0 +1,25 @@
+name: jest-image-snapshot
+website: https://github.com/americanexpress/jest-image-snapshot
+summary: Jest matcher that compares a PNG buffer against a stored snapshot and writes a composite diff image on failure.
+category: runner-integration
+aliases:
+  - toMatchImageSnapshot
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local
+runners:
+  - Jest
+  - Puppeteer, Playwright or anything that yields a PNG buffer
+diffEngine: pixelmatch or SSIM (comparisonMethod), failureThreshold in pixels or percent
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: converter
+notes:
+  - The diff image is a baseline | diff | received composite unless onlyDiff is set; the received image is stored separately only with storeReceivedOnFailure.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/americanexpress/jest-image-snapshot

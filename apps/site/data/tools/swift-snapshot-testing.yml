@@ -1,0 +1,24 @@
+name: swift-snapshot-testing
+website: https://github.com/pointfreeco/swift-snapshot-testing
+summary: Snapshot testing for Swift with image strategies for views, view controllers and SwiftUI, storing references in __Snapshots__ next to the tests.
+category: mobile-native
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - XCTest
+  - Swift Testing
+diffEngine: pixel comparison with precision and perceptualPrecision options
+reviewSurface:
+  - local
+  - ide
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - Failures attach reference, failure and difference images to the XCTest result; reading them back means parsing an xcresult bundle.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/pointfreeco/swift-snapshot-testing

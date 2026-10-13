@@ -1,0 +1,23 @@
+name: Roborazzi
+website: https://github.com/takahirom/roborazzi
+summary: Android screenshot tests that run under Robolectric on the JVM, with record, compare and verify Gradle tasks and a JSON results summary.
+category: mobile-native
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local
+runners:
+  - JUnit with Robolectric (Android, Compose and Views)
+diffEngine: pixel comparison with changeThreshold and a pluggable comparator
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: json-report
+manifestSupport: converter
+notes:
+  - build/test-results/roborazzi/<variant>/results-summary.json lists every capture as recorded, added, changed or unchanged with its diff percentage and file paths.
+  - Compare writes a golden | diff | actual composite named _compare.png.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/takahirom/roborazzi

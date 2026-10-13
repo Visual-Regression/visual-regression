@@ -1,0 +1,25 @@
+name: Vitest toMatchScreenshot
+website: https://vitest.dev/guide/browser/visual-regression-testing
+summary: Screenshot assertion of Vitest browser mode; references in __screenshots__ next to the tests, failures under .vitest/attachments.
+category: runner-integration
+aliases:
+  - vitest browser mode
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Vitest (browser mode)
+diffEngine: pixelmatch (threshold, allowedMismatchedPixelRatio)
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: images-only
+manifestSupport: converter
+notes:
+  - File names carry the browser and platform (button-chromium-darwin.png), so one test keeps one reference per browser and OS.
+lastVerified: '2026-10-13'
+sources:
+  - https://vitest.dev/guide/browser/visual-regression-testing
+  - https://vitest.dev/blog/vitest-4

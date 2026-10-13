@@ -1,0 +1,22 @@
+name: Detox
+website: https://wix.github.io/Detox/
+summary: Gray-box end-to-end testing for React Native; it can take screenshots into the artifacts folder but does not compare them.
+category: mobile-native
+openSource: true
+license: MIT
+selfHostable: true
+hosting: local
+runners:
+  - Detox (Jest)
+diffEngine: none
+reviewSurface:
+  - local
+baselineStorage: repo
+pricingModel: free
+machineReadableResults: none
+manifestSupport: none
+notes:
+  - Listed because people look for it; the docs say it does not have any sort of screenshot comparison. Pair it with a diff engine or an image-snapshot matcher.
+lastVerified: '2026-10-13'
+sources:
+  - https://wix.github.io/Detox/docs/19.x/api/screenshots/

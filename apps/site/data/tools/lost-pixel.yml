@@ -1,0 +1,29 @@
+name: Lost Pixel
+website: https://lost-pixel.com
+summary: Open-source engine that screenshots Storybook, Ladle, Histoire or a list of pages and diffs locally, with an optional hosted platform for review.
+category: hosted-review
+openSource: true
+license: MIT (engine), platform proprietary
+selfHostable: true
+hosting: local-or-cloud
+runners:
+  - Storybook
+  - Ladle
+  - Histoire
+  - page list
+  - any (customShots folder)
+diffEngine: pixelmatch or odiff
+reviewSurface:
+  - local
+  - pr
+  - web-app
+baselineStorage: repo-or-service
+pricingModel: freemium
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - The engine writes .lostpixel/baseline, current and difference folders; no JSON summary was found.
+lastVerified: '2026-10-13'
+sources:
+  - https://docs.lost-pixel.com/user-docs/api-reference/lost-pixel.config.js-or-ts.md
+  - https://github.com/lost-pixel/lost-pixel

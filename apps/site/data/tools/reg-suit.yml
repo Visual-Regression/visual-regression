@@ -1,0 +1,28 @@
+name: reg-suit
+website: https://github.com/reg-viz/reg-suit
+summary: Compares a directory of actual images against expected ones fetched from S3 or GCS, publishes an HTML report and comments on the pull request; reg-cli is the engine on its own.
+category: hosted-review
+aliases:
+  - reg-cli
+  - reg-viz
+openSource: true
+license: MIT
+selfHostable: true
+hosting: self-hosted
+runners:
+  - any (takes a directory of images)
+diffEngine: reg-cli (pixel comparison with a threshold, anti-aliasing tolerance)
+reviewSurface:
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: free
+machineReadableResults: json-report
+manifestSupport: generic
+notes:
+  - reg.json lists failed, new, deleted and passed items by file name, without ratios.
+  - Self-hosted on your own object storage; the notifier plugins post to GitHub, GitLab, Slack and Chatwork.
+lastVerified: '2026-10-13'
+sources:
+  - https://github.com/reg-viz/reg-suit
+  - https://github.com/reg-viz/reg-cli

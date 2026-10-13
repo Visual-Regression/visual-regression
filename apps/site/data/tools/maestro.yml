@@ -1,0 +1,23 @@
+name: Maestro
+website: https://docs.maestro.dev
+summary: Mobile UI testing framework with an assertScreenshot command that compares against a baseline and writes a diff image into the run's artifacts.
+category: mobile-native
+openSource: true
+license: Apache-2.0
+selfHostable: true
+hosting: local-or-cloud
+runners:
+  - Maestro flows (iOS, Android, web)
+diffEngine: pixel comparison with a threshold
+reviewSurface:
+  - local
+  - web-app
+baselineStorage: repo
+pricingModel: freemium
+machineReadableResults: images-only
+manifestSupport: generic
+notes:
+  - Diff images land in ~/.maestro/tests/<timestamp>/<flow>/ as step-NNN-assertScreenshot-diff.png.
+lastVerified: '2026-10-13'
+sources:
+  - https://docs.maestro.dev/reference/commands-available/assertscreenshot

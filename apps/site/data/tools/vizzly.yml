@@ -1,0 +1,29 @@
+name: Vizzly
+website: https://vizzly.dev
+summary: Hosted review service with a CLI that uploads a folder of screenshots and a local TDD mode that diffs on the developer's machine.
+category: hosted-review
+openSource: false
+license: CLI under MIT, service proprietary
+selfHostable: false
+hosting: local-or-cloud
+runners:
+  - Playwright
+  - Cypress
+  - Puppeteer
+  - Selenium
+  - any (vizzly upload of a folder)
+diffEngine: server-side, with a threshold option; local comparison in TDD mode
+reviewSurface:
+  - local
+  - pr
+  - web-app
+baselineStorage: service
+pricingModel: freemium
+machineReadableResults: json-report
+manifestSupport: generic
+notes:
+  - TDD mode writes a .vizzly folder with screenshots and diffs and can print JSON context.
+lastVerified: '2026-10-13'
+sources:
+  - https://docs.vizzly.dev/integration/cli/upload
+  - https://github.com/vizzly-testing/cli
