@@ -45,10 +45,11 @@ describe('detectCi', () => {
       ),
     ).toEqual({
       provider: 'github',
-      repository: 'FRSOURCE/plugin',
-      sha: 'merge-sha',
+      repositoryName: 'FRSOURCE/plugin',
+      repositoryUrl: 'https://github.com/FRSOURCE/plugin',
+      commit: 'merge-sha',
       ref: 'refs/pull/42/merge',
-      branch: 'feat/x',
+      branchName: 'feat/x',
       pullRequest: {
         number: 42,
         headSha: 'head-sha',
@@ -56,13 +57,14 @@ describe('detectCi', () => {
         baseRef: 'main',
       },
       event: 'pull_request',
-      runId: '123',
+      buildId: '123',
+      buildName: 'CI',
+      buildNumber: '7',
+      buildUrl:
+        'https://github.com/FRSOURCE/plugin/actions/runs/123/attempts/2',
       runAttempt: '2',
-      runNumber: '7',
       job: 'test',
-      workflow: 'CI',
       serverUrl: 'https://github.com',
-      url: 'https://github.com/FRSOURCE/plugin/actions/runs/123/attempts/2',
       workspace: '/home/runner/work/plugin/plugin',
     });
   });
@@ -83,10 +85,11 @@ describe('detectCi', () => {
 
     expect(ci).toMatchObject({
       provider: 'github',
-      branch: 'main',
+      branchName: 'main',
       pullRequest: null,
       serverUrl: 'https://github.com',
-      url: 'https://github.com/FRSOURCE/plugin/actions/runs/123',
+      repositoryUrl: 'https://github.com/FRSOURCE/plugin',
+      buildUrl: 'https://github.com/FRSOURCE/plugin/actions/runs/123',
     });
     expect(ci).not.toHaveProperty('runAttempt');
   });
@@ -135,6 +138,9 @@ describe('detectCi', () => {
         CI_MERGE_REQUEST_TARGET_BRANCH_NAME: 'main',
         CI_PIPELINE_SOURCE: 'merge_request_event',
         CI_PIPELINE_ID: '99',
+        CI_PIPELINE_IID: '42',
+        CI_PIPELINE_NAME: 'e2e pipeline',
+        CI_PROJECT_URL: 'https://gitlab.com/group/project',
         CI_JOB_NAME: 'e2e',
         CI_JOB_ID: '1001',
         CI_SERVER_URL: 'https://gitlab.com',
@@ -143,10 +149,11 @@ describe('detectCi', () => {
       }),
     ).toEqual({
       provider: 'gitlab',
-      repository: 'group/project',
-      sha: 'sha',
+      repositoryName: 'group/project',
+      repositoryUrl: 'https://gitlab.com/group/project',
+      commit: 'sha',
       ref: 'feat/x',
-      branch: 'feat/x',
+      branchName: 'feat/x',
       pullRequest: {
         number: 12,
         headSha: 'head-sha',
@@ -154,11 +161,13 @@ describe('detectCi', () => {
         baseRef: 'main',
       },
       event: 'merge_request_event',
-      runId: '99',
+      buildId: '99',
+      buildName: 'e2e pipeline',
+      buildNumber: '42',
+      buildUrl: 'https://gitlab.com/group/project/-/jobs/1001',
       job: 'e2e',
       jobId: '1001',
       serverUrl: 'https://gitlab.com',
-      url: 'https://gitlab.com/group/project/-/jobs/1001',
       workspace: '/builds/group/project',
     });
   });
@@ -173,7 +182,7 @@ describe('detectCi', () => {
     ).toEqual({
       provider: 'gitlab',
       ref: 'main',
-      branch: 'main',
+      branchName: 'main',
       pullRequest: null,
     });
   });

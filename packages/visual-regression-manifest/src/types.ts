@@ -11,6 +11,11 @@
  * the run (`ci`) and describes how to reproduce it (`runner`, `platform`,
  * `options`).
  *
+ * Where a field has a CTRF (ctrf.io) equivalent it carries CTRF's name
+ * (`reportFormat`, `specVersion`, `tool`, `summary`, `ci.commit`,
+ * `ci.buildId`, `platform.osPlatform`, `extra`, attachments), so a manifest
+ * converts to and from a CTRF report without renaming; see `convert/ctrf.ts`.
+ *
  * The normative description of the format is `schema.json` next to this file;
  * these types mirror it. Consumers must ignore keys they do not know.
  */
@@ -19,12 +24,32 @@ export type ManifestStatus =
   'passed' | 'failed' | 'missing-baseline' | 'created' | 'updated' | 'approved';
 
 /**
- * Open metadata keyed by namespace; consumers ignore namespaces they do not
- * know. Conventional namespaces: `design` (`tool`, `file`, `node`, `version` of
- * a design software source) and `storybook` (`args`, `globals`). Not part of
- * baseline identity.
+ * Open metadata keyed by namespace (CTRF's `extra`); consumers ignore
+ * namespaces they do not know. Conventional namespaces: `design` (`tool`,
+ * `file`, `node`, `version` of a design software source) and `storybook`
+ * (`args`, `globals`). `visualRegression` is reserved for the CTRF converters.
+ * Not part of baseline identity.
  */
-export type ManifestMeta = Record<string, Record<string, unknown>>;
+export type ManifestExtra = Record<string, Record<string, unknown>>;
+
+/** What wrote the manifest; same shape as CTRF's `tool`. */
+export type ManifestTool = {
+  name: string;
+  version?: string;
+  extra?: ManifestExtra;
+};
+
+/** Counts over the entries; `needsHuman` is `failed` + `missingBaseline`. */
+export type ManifestSummary = {
+  entries: number;
+  passed: number;
+  failed: number;
+  missingBaseline: number;
+  created: number;
+  updated: number;
+  approved: number;
+  needsHuman: number;
+};
 
 /** What a screenshot is a picture of, as opposed to the test that took it. */
 export type ManifestSubject = {
@@ -40,7 +65,17 @@ export type ManifestImage = {
   width?: number;
   height?: number;
   /** Provenance of this image, e.g. `design` for a baseline exported from a design file. */
-  meta?: ManifestMeta;
+  extra?: ManifestExtra;
+};
+
+/** Any other file of an entry (trace, video, DOM snapshot); same shape as a CTRF attachment. */
+export type ManifestAttachment = {
+  name: string;
+  contentType: string;
+  /** Relative to `Manifest.projectRoot` with `/` separators. */
+  path: string;
+  attachmentId?: string;
+  extra?: ManifestExtra;
 };
 
 export type ManifestBrowser = {
@@ -52,12 +87,15 @@ export type ManifestBrowser = {
 
 /**
  * The machine that ran the tests (the host), which is not necessarily the
- * device under test (see `ManifestEntry.target`). `os` is an open string;
- * Node-based writers use `process.platform` names (`linux`, `darwin`, `win32`).
+ * device under test (see `ManifestEntry.target`). Named like CTRF's
+ * `environment`: `osPlatform` is an open string (Node-based writers use
+ * `process.platform` names: `linux`, `darwin`, `win32`), `osRelease` the
+ * kernel release, `osVersion` the human-readable OS version.
  */
 export type ManifestPlatform = {
-  os: string;
+  osPlatform: string;
   arch: string;
+  osRelease?: string;
   osVersion?: string;
 };
 
@@ -116,7 +154,8 @@ export type ManifestHashes = {
 };
 
 export type ManifestEntryPlatform = {
-  os: string;
+  osPlatform: string;
+  osRelease?: string;
   osVersion?: string;
   arch?: string;
   /** Absent for non-browser targets (desktop and mobile applications). */
@@ -158,8 +197,10 @@ export type ManifestEntry = {
   name: string;
   test: {
     /** Test file path relative to `Manifest.projectRoot` with `/` separators. */
-    file: string;
+    filePath: string;
+    /** Describe blocks and test title, outermost first. */
     titlePath: string[];
+    /** Attempt index of the test, `0` for the first attempt. */
     retry: number;
   };
   status: ManifestStatus;
@@ -173,10 +214,14 @@ export type ManifestEntry = {
     actual: ManifestImage;
     diff: Pick<ManifestImage, 'path'>;
   };
+  /** Other files of the entry: a trace, a video, a DOM snapshot. */
+  attachments?: ManifestAttachment[];
   /** `true` whenever the baseline file was (re)written during this run. */
   baselineWritten: boolean;
   /** ISO 8601 timestamp of when the entry was (last) written. */
   recordedAt: string;
+  /** Capture plus comparison time in milliseconds, when measured. */
+  duration?: number;
   /** Where this particular screenshot was taken; kept per entry because manifests of several machines get merged. */
   platform?: ManifestEntryPlatform;
   target?: ManifestTarget;
@@ -184,11 +229,11 @@ export type ManifestEntry = {
    * Producer-chosen id that tells entries of the same screenshot name apart
    * (device, OS version, density, locale, theme, project...). Part of the
    * baseline identity when merging; absent, identity falls back to
-   * `platform.os` + `platform.browser.name` + renderer.
+   * `platform.osPlatform` + `platform.browser.name` + renderer.
    */
   variant?: string;
   subject?: ManifestSubject;
-  meta?: ManifestMeta;
+  extra?: ManifestExtra;
   viewport?: ManifestViewport;
   /** Absent on entries created without a preceding comparison (e.g. by a review UI). */
   options?: ManifestEntryOptions;
@@ -209,20 +254,22 @@ export type ManifestUpload = {
 
 /**
  * CI metadata detected from environment variables. `null` outside CI;
- * `provider: null` when only a generic `CI` flag is set.
+ * `provider: null` when only a generic `CI` flag is set. Keys with a CTRF
+ * `environment` equivalent carry its name.
  *
- * On GitHub `pull_request` events `sha` is the synthetic merge commit; tools
+ * On GitHub `pull_request` events `commit` is the synthetic merge commit; tools
  * that write to the PR branch must use `pullRequest.headSha` / `headRef`.
  */
 export type ManifestCi = {
   /** `github` and `gitlab` are detected; other ids are free-form. */
   provider: 'github' | 'gitlab' | (string & {}) | null;
   /** `owner/repo` (GitHub) or `group/project` (GitLab). */
-  repository?: string;
-  sha?: string;
+  repositoryName?: string;
+  repositoryUrl?: string;
+  commit?: string;
   ref?: string;
   /** Source branch when known. */
-  branch?: string;
+  branchName?: string;
   pullRequest?: {
     number: number;
     headSha?: string;
@@ -230,15 +277,17 @@ export type ManifestCi = {
     baseRef?: string;
   } | null;
   event?: string;
-  runId?: string;
+  /** The run or pipeline id. */
+  buildId?: string;
+  /** The workflow or pipeline name. */
+  buildName?: string;
+  buildNumber?: string;
+  /** Link to the run/job page. */
+  buildUrl?: string;
   runAttempt?: string;
-  runNumber?: string;
   job?: string;
   jobId?: string;
-  workflow?: string;
   serverUrl?: string;
-  /** Link to the run/job page. */
-  url?: string;
   /** Absolute path of the checked-out repository on the CI machine. */
   workspace?: string;
 };
@@ -271,7 +320,9 @@ export type ManifestRunner = {
 };
 
 export type Manifest = {
-  version: 1;
+  reportFormat: 'visual-regression-manifest';
+  /** Semver of the format; the major is bumped on breaking changes only. */
+  specVersion: string;
   /** ISO 8601, when the run started. */
   createdAt: string;
   /** ISO 8601, when the file was last written. */
@@ -280,16 +331,20 @@ export type Manifest = {
   projectRoot: string;
   platform: ManifestPlatform;
   ci: ManifestCi | null;
+  /** What wrote the manifest. */
+  tool: ManifestTool;
   /** Global tool options as configured, in the writer's vocabulary. */
   options: Record<string, unknown>;
   runner: ManifestRunner;
   /** Reserved for upload services; never written by the test-runner integrations today. */
   upload?: ManifestUpload;
+  summary: ManifestSummary;
   entries: ManifestEntry[];
+  extra?: ManifestExtra;
 };
 
-/** The run-level part of a manifest: everything but the entries and the write timestamp. */
+/** The run-level part of a manifest: everything but the entries, the summary and the format envelope. */
 export type ManifestHeader = Omit<
   Manifest,
-  'version' | 'updatedAt' | 'entries'
+  'reportFormat' | 'specVersion' | 'updatedAt' | 'summary' | 'entries'
 >;

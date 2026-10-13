@@ -1,66 +1,89 @@
-<h1 align="center">pixsame manifest</h1>
-<p align="center">The visual regression run manifest, as a free standard: JSON Schema, TypeScript types, reader, writer, merger and converters. Published as <code>visual-regression-manifest</code>.</p>
+<h1 align="center">visual-regression-manifest</h1>
+<p align="center">One JSON file per test run that lists every screenshot comparison, built upon CTRF. JSON Schema, TypeScript types, reader, writer, merger and converters.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/visual-regression-manifest">
     <img src="https://img.shields.io/npm/v/visual-regression-manifest.svg" alt="NPM version badge">
   </a>
-  <a href="https://github.com/pixsame/cypress-plugin-visual-regression-diff/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/pixsame/cypress-plugin-visual-regression-diff.svg" alt="license MIT badge">
+  <a href="https://github.com/visual-regression/visual-regression/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/visual-regression/visual-regression.svg" alt="license MIT badge">
   </a>
 </p>
 
-A **run manifest** is one JSON file per test run that lists every screenshot comparison the run made: which test it came from, whether it passed, failed, created or updated its baseline, the diff ratio, and where the baseline, actual and diff images are. Next to the entries it records where the run happened (CI provider, repository, commit, pull request, run id) and what it ran with (runner, browser, options), so a tool that runs _after_ the tests (a PR comment bot, a review dashboard, an approval tool) reads one file instead of parsing logs or walking the snapshots directory.
+A **run manifest** is one JSON file per test run that lists every screenshot comparison the run made: which test it came from, whether it passed, failed, created or updated its baseline, the diff ratio, and where the baseline, actual and diff images are. Next to the entries it records where the run happened (CI provider, repository, commit, pull request, build id) and what it ran with (tool, runner, browser, options), so a tool that runs _after_ the tests (a PR comment bot, a review dashboard, an approval tool) reads one file instead of parsing logs or walking the snapshots directory.
 
-The format is **runner-agnostic**: the same file is written by [`@frsource/cypress-plugin-visual-regression-diff`](https://www.npmjs.com/package/@frsource/cypress-plugin-visual-regression-diff) (from 4.3 on), by its Playwright sibling (in preparation), and by the converters in this package for tools that write no manifest of their own. Only the `runner` block carries runner vocabulary.
+The format is **runner-agnostic**: the same file is written by the [pixsame](https://pixsame.com) Cypress and Playwright integrations and by the converters in this package for tools that write no manifest of their own (Playwright's own `toHaveScreenshot`, any tool that leaves image files behind). Only the `runner` block carries runner vocabulary.
 
-This package has no runtime dependencies.
+It is **built upon [CTRF](https://ctrf.io)**, the Common Test Report Format: the envelope (`reportFormat`, `specVersion`), `tool`, `summary`, the CI and platform fields and the open `extra` objects carry CTRF's names, so a manifest converts to a CTRF report and back without renaming anything ([`toCtrf` / `fromCtrf`](#ctrf)). What CTRF has no field for, a visual comparison's three images, its statuses, diff ratio and threshold, is what this format adds.
+
+The spec lives at [visual-regression.dev/manifest](https://visual-regression.dev/manifest). This package has no runtime dependencies.
 
 - [The format](#the-format)
 - [Reading manifests](#reading-manifests)
 - [Merging the manifests of a run](#merging-the-manifests-of-a-run)
 - [Writing manifests](#writing-manifests)
-- [Converting other outputs into a manifest](#converting-other-outputs-into-a-manifest)
+- [Converting to and from other formats](#converting-to-and-from-other-formats)
 - [Reference](#reference)
 
 ## The format
 
-The normative description is the JSON Schema (draft 2020-12), shipped as `schema.json` (in the package, and in the repository under `src/`) and importable as `visual-regression-manifest/schema.json` or the `manifestSchema` export. The TypeScript types (`Manifest`, `ManifestEntry`, ...) mirror it. A trimmed example:
+The normative description is the JSON Schema (draft 2020-12) at `https://visual-regression.dev/schema/v1.json`, shipped as `schema.json` (in the package, and in the repository under `src/`) and importable as `visual-regression-manifest/schema.json` or the `manifestSchema` export. The TypeScript types (`Manifest`, `ManifestEntry`, ...) mirror it. A trimmed example:
 
 ```jsonc
 {
-  "version": 1,
+  "reportFormat": "visual-regression-manifest",
+  "specVersion": "1.0.0-beta.1",
   "createdAt": "2026-09-22T10:00:00.000Z",
   "updatedAt": "2026-09-22T10:03:12.481Z",
   "projectRoot": "/home/runner/work/app/app", // every relative path below resolves against it
-  "platform": { "os": "linux", "arch": "x64", "osVersion": "6.8.0-1021-azure" },
+  "platform": {
+    "osPlatform": "linux",
+    "arch": "x64",
+    "osRelease": "6.8.0-1021-azure",
+  },
   "ci": {
     "provider": "github",
-    "repository": "acme/app",
-    "sha": "0f1e2d…", // on pull_request events: the merge commit
+    "repositoryName": "acme/app",
+    "repositoryUrl": "https://github.com/acme/app",
+    "commit": "0f1e2d…", // on pull_request events: the merge commit
     "pullRequest": {
       "number": 42,
       "headSha": "9a8b7c…",
       "headRef": "feat/new-header",
       "baseRef": "main",
     },
-    "runId": "1234567890",
+    "buildId": "1234567890",
+    "buildName": "CI",
+    "buildUrl": "https://github.com/acme/app/actions/runs/1234567890/attempts/1",
     "runAttempt": "1",
-    "url": "https://github.com/acme/app/actions/runs/1234567890/attempts/1",
     "workspace": "/home/runner/work/app/app", // the checkout directory
   },
-  "options": { "updateImages": "failures-only" }, // the writer's global options, in its own vocabulary
+  "tool": {
+    "name": "@pixsame/cypress-plugin-visual-regression-diff",
+    "version": "4.3.0",
+  }, // what wrote the file
+  "options": { "updateImages": "failures-only" }, // the tool's global options, in its own vocabulary
   "runner": {
     "name": "cypress",
     "version": "16.1.0",
     "testingType": "e2e",
     "mode": "run",
-  }, // only `name` is required
+  }, // what ran the tests; only `name` is required
+  "summary": {
+    "entries": 1,
+    "passed": 0,
+    "failed": 1,
+    "missingBaseline": 0,
+    "created": 0,
+    "updated": 0,
+    "approved": 0,
+    "needsHuman": 1,
+  },
   "entries": [
     {
       "name": "home page renders_#0", // the baseline file stem
       "test": {
-        "file": "cypress/e2e/home.cy.ts",
+        "filePath": "cypress/e2e/home.cy.ts",
         "titlePath": ["home page", "renders"],
         "retry": 0,
       },
@@ -83,8 +106,9 @@ The normative description is the JSON Schema (draft 2020-12), shipped as `schema
       },
       "baselineWritten": false,
       "recordedAt": "2026-09-22T10:03:12.480Z",
+      "duration": 840, // ms, when the writer measured it
       "platform": {
-        "os": "linux",
+        "osPlatform": "linux",
         "arch": "x64",
         "browser": { "name": "chrome", "version": "130.0.0.0" },
       },
@@ -101,28 +125,30 @@ The normative description is the JSON Schema (draft 2020-12), shipped as `schema
 }
 ```
 
-| `status`           | meaning                                                 | `images.actual.path` | `images.diff.path` |
-| ------------------ | ------------------------------------------------------- | -------------------- | ------------------ |
-| `passed`           | within threshold                                        | `null`               | `null`             |
-| `failed`           | above threshold, actual and diff images kept for review | path                 | path (if any)      |
-| `missing-baseline` | no baseline and the tool was told not to create one     | path                 | `null`             |
-| `created`          | no baseline, the actual image became the baseline       | `null`               | `null`             |
-| `updated`          | baseline overwritten on request                         | `null`               | `null`             |
-| `approved`         | baseline replaced from a review UI                      | `null`               | `null`             |
+| `status`           | meaning                                                 | `images.actual.path` | `images.diff.path` | as CTRF `status` |
+| ------------------ | ------------------------------------------------------- | -------------------- | ------------------ | ---------------- |
+| `passed`           | within threshold                                        | `null`               | `null`             | `passed`         |
+| `failed`           | above threshold, actual and diff images kept for review | path                 | path (if any)      | `failed`         |
+| `missing-baseline` | no baseline and the tool was told not to create one     | path                 | `null`             | `failed`         |
+| `created`          | no baseline, the actual image became the baseline       | `null`               | `null`             | `passed`         |
+| `updated`          | baseline overwritten on request                         | `null`               | `null`             | `passed`         |
+| `approved`         | baseline replaced from a review UI                      | `null`               | `null`             | `passed`         |
 
 Rules every writer and reader follows:
 
 - **Paths** are relative to `projectRoot` with `/` separators and may point outside the project (`../…`). `projectRoot` is the tested project, not necessarily the repository root: `ci.workspace` is the checkout directory.
-- **`failed` and `missing-baseline` need a human.** Copying `images.actual.path` over `images.baseline.path` approves them. `baselineWritten` says whether the working tree changed, whatever the status.
+- **`failed` and `missing-baseline` need a human.** Copying `images.actual.path` over `images.baseline.path` approves them. `baselineWritten` says whether the working tree changed, whatever the status. `summary.needsHuman` counts them, so a consumer can decide without reading the entries.
+- **`tool` wrote the file, `runner` ran the tests.** A Cypress plugin reports itself as `tool` and Cypress as `runner`; a converter reports itself as `tool` and the tool it converted from as `runner`.
 - **`platform` is where the test ran, `renderer` is where the pixels came from.** Under `native` the renderer is the test browser itself. Entries with different renderers are different baselines.
 - **Browsers are optional.** Desktop and mobile tools leave `platform.browser` out and describe what they captured in the entry's `target` (device, OS version, display density and orientation, locale, theme, app, driver). The run-level `platform` is the host that ran the tests, not necessarily the device. `renderer.backend` is an open string (`native`, `docker`, `cloud`, or your own, e.g. `device`); `renderer.name` names what rendered the pixels.
-- **`variant` is the baseline identity you control.** Entries of the same screenshot name with a different `variant` (`iphone-16-ios18-dark`) never overwrite each other when manifests are merged. Without one, identity is `platform.os` + `platform.browser.name` + renderer.
-- **`subject` says what was captured, `meta` carries tool-specific detail.** `subject` is a tool-neutral `{ id, kind }` (for example a Storybook story id with kind `story`) for tools that group or match entries by the thing shown rather than by the test. `meta` is an open object keyed by namespace, on an entry or on a single image: `design` (`tool`, `file`, `node`, `version` of the design-software source a baseline was exported from) and `storybook` (`args`, `globals`) are the conventional ones. Neither takes part in baseline identity, and readers ignore namespaces they do not know.
+- **`variant` is the baseline identity you control.** Entries of the same screenshot name with a different `variant` (`iphone-16-ios18-dark`) never overwrite each other when manifests are merged. Without one, identity is `platform.osPlatform` + `platform.browser.name` + renderer.
+- **`subject` says what was captured, `extra` carries tool-specific detail.** `subject` is a tool-neutral `{ id, kind }` (for example a Storybook story id with kind `story`) for tools that group or match entries by the thing shown rather than by the test. `extra` is an open object keyed by namespace, on the run, an entry, an image or an attachment: `design` (`tool`, `file`, `node`, `version` of the design-software source a baseline was exported from) and `storybook` (`args`, `globals`) are the conventional ones; `visualRegression` is reserved for the CTRF converters. Neither takes part in baseline identity, and readers ignore namespaces they do not know.
+- **`attachments` are any other files** of an entry (a trace, a video, a DOM snapshot), in CTRF's attachment shape (`name`, `contentType`, `path`).
 - **Baseline, actual and diff share one image extension** (PNG for every current writer); `.actual` and `.diff` go before it.
 - **Every entry is self-sufficient** (its own `platform`, `viewport`, `renderer`), so the entries of several manifests (a matrix of machines, one file per worker, e2e + component) can be merged.
 - **One file per writer process**, named `visual-regression-manifest[.<label>].json`, rewritten after every comparison, so it is complete even when the run is aborted. `**/visual-regression-manifest{,.*}.json` (`MANIFEST_FILE_GLOB`) finds all of them in an artifact and nothing named merely alike. Merging warns when one run reports the same screenshot identity twice with different results; give such entries a distinct `variant`.
-- **Consumers ignore keys they do not know.** `version` is bumped on breaking changes only.
-- On GitHub `pull_request` events `ci.sha` is the temporary merge commit; use `ci.pullRequest.headSha` / `headRef` to write to the branch. `ci.runId` and `ci.runAttempt` locate the workflow artifact.
+- **Consumers ignore keys they do not know.** The major of `specVersion` is bumped on breaking changes only; a reader accepts every version with the major it knows.
+- On GitHub `pull_request` events `ci.commit` is the temporary merge commit; use `ci.pullRequest.headSha` / `headRef` to write to the branch. `ci.buildId` and `ci.runAttempt` locate the workflow artifact.
 
 ## Reading manifests
 
@@ -166,7 +192,7 @@ import { mergeManifests, selectEntries } from 'visual-regression-manifest';
 
 const run = mergeManifests(
   found.map(({ file, manifest }) => ({ manifest, label: file })),
-  { headSha: pr.head.sha, runId: workflowRun.id, repository: 'acme/app' },
+  { headSha: pr.head.sha, buildId: workflowRun.id, repositoryName: 'acme/app' },
 );
 
 run.counts; // { passed: 40, failed: 2, 'missing-baseline': 1, created: 0, updated: 0, approved: 0 }
@@ -204,7 +230,8 @@ const writer = new ManifestWriter(
   `output/${getManifestFileName('my-runner')}`,
   {
     projectRoot: process.cwd(),
-    runner: { name: 'my-runner', version: '1.0.0' }, // add any runner-specific keys
+    tool: { name: 'my-visual-plugin', version: '1.0.0' }, // what writes the file
+    runner: { name: 'my-runner', version: '2.0.0' }, // what runs the tests; add any runner-specific keys
     options: { threshold: 0.01 }, // your global options, verbatim
     // platform and ci are detected (GitHub Actions, GitLab CI) unless given
   },
@@ -221,11 +248,15 @@ writer.record({
   diffRatio: 0.02,
   threshold: 0.01,
   baselineWritten: false,
+  duration: 840,
   actualSize: { width: 1280, height: 720 },
   platform: {
-    os: process.platform,
+    osPlatform: process.platform,
     browser: { name: 'chromium', version: '130' },
   },
+  attachments: [
+    { name: 'trace', contentType: 'application/zip', path: 'trace.zip' },
+  ],
   message: '2% of pixels differ',
 });
 writer.approve({ actualPath: 'shots/home.actual.png' }); // after moving the actual over the baseline
@@ -233,11 +264,43 @@ writer.dropTestFile('e2e/home.spec.ts'); // before re-running a file in an inter
 writer.reset(); // start of a run: forget everything, delete the file
 ```
 
-`ManifestBuilder` is the same without the file (`toJSON()` gives the manifest), and `writeManifestFile` is the atomic write on its own. The writer computes project-relative paths, `null`s images that do not exist, hashes the ones that do, derives a `native` renderer from `platform` and sorts entries by test file and name.
+`ManifestBuilder` is the same without the file (`toJSON()` gives the manifest), and `writeManifestFile` is the atomic write on its own. The writer computes project-relative paths, `null`s images that do not exist, hashes the ones that do, derives a `native` renderer from `platform`, keeps `summary` up to date and sorts entries by test file and name.
 
-## Converting other outputs into a manifest
+## Converting to and from other formats
 
-For tools that write no manifest, so that the same CI tooling works for them.
+### CTRF
+
+[CTRF](https://ctrf.io) is the test results format a growing number of reporters write and CI integrations read (PR summaries, Slack messages, dashboards). A manifest becomes a CTRF report with one test of `type: "visual"` per entry, named after the screenshot, with the baseline, actual and diff images as attachments and everything CTRF has no field for under `extra.visualRegression`:
+
+```ts
+import fs from 'fs';
+import { readManifestFile, toCtrf, fromCtrf } from 'visual-regression-manifest';
+
+const manifest = readManifestFile('visual-regression-manifest.json');
+fs.writeFileSync('ctrf-report.json', JSON.stringify(toCtrf(manifest), null, 2));
+
+// and back: a report made by `toCtrf` converts without loss
+const same = fromCtrf(JSON.parse(fs.readFileSync('ctrf-report.json', 'utf8')));
+```
+
+| manifest                                                                                                        | CTRF                                                                                     |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `tool`                                                                                                          | `results.tool`, `generatedBy`                                                            |
+| `createdAt`, `updatedAt`                                                                                        | `summary.start`, `summary.stop`, `timestamp`                                             |
+| `summary`                                                                                                       | `summary.tests/passed/failed` (via the status table above); verbatim in `summary.extra`  |
+| `ci.commit`, `branchName`, `repositoryName`, `repositoryUrl`, `buildId`, `buildName`, `buildNumber`, `buildUrl` | `environment.<same name>`; `ci.buildId` also as the root `runId`                         |
+| `platform.osPlatform`, `osRelease`, `osVersion`                                                                 | `environment.<same name>`                                                                |
+| the rest of `ci` and `platform`                                                                                 | `environment.extra.visualRegression.{ci, platform}`                                      |
+| `specVersion`, `projectRoot`, `options`, `runner`, `upload`                                                     | `results.extra.visualRegression`                                                         |
+| entry `name`, `test.titlePath`, `test.filePath`, `message`, `duration`, `test.retry`                            | `test.name`, `suite`, `filePath`, `message`, `duration`, `retries`                       |
+| `status`                                                                                                        | `test.status` (via the table) and `test.rawStatus` (verbatim)                            |
+| `recordedAt`                                                                                                    | `test.stop` (and `start` when `duration` is known)                                       |
+| `platform.browser`, `target.device.model`                                                                       | `test.browser`, `test.device`                                                            |
+| `images.baseline/actual/diff`, `attachments`                                                                    | `test.attachments[]`, with `extra.visualRegression.role`, sizes and hashes on the images |
+| `comparison`, `images`, `hashes`, `variant`, `renderer`, `target`, `subject`, `viewport`, ...                   | `test.extra.visualRegression`                                                            |
+| any other `extra` namespace                                                                                     | the same namespace on the CTRF object                                                    |
+
+`fromCtrf` reads reports made by `toCtrf` back without loss (apart from the entry order, which is re-sorted, and the summary, which is recomputed). With `{ lenient: true, projectRoot }` it also converts the visual tests of reports from other reporters, taking the three images from attachments named or tagged `baseline`/`expected`, `actual` and `diff`, and the status from `rawStatus` or from which images exist.
 
 ### Playwright's `toHaveScreenshot`
 
@@ -288,20 +351,21 @@ The status is inferred from which files exist (`inferStatus`), image sizes are r
 
 ## Reference
 
-| export                                                                                     | purpose                                                               |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `manifestSchema`, `./schema.json`                                                          | the JSON Schema                                                       |
-| `Manifest`, `ManifestEntry`, `ManifestStatus`, `ManifestCi`, `ManifestRunner`, ...         | the types                                                             |
-| `MANIFEST_VERSION`, `getManifestFileName`, `isManifestFileName`, `MANIFEST_FILE_GLOB`      | naming conventions                                                    |
-| `MANIFEST_STATUSES`, `NEEDS_HUMAN_STATUSES`, `needsHuman`                                  | status vocabulary                                                     |
-| `parseManifest`, `parseManifestJson`, `validateManifest`, `isManifest`                     | validation                                                            |
-| `readManifestFile`, `readManifestFiles`, `findManifestFiles`                               | files                                                                 |
-| `mergeManifests`, `selectEntries`, `entryKey`, `keyHash`, `platformLabel`, `countByStatus` | merging                                                               |
-| `projectDirInRepo`, `toRepoPath`, `isSafeRelativePath`, `toPosix`                          | path helpers for approval tools                                       |
-| `ManifestWriter`, `ManifestBuilder`, `writeManifestFile`, `createManifestHeader`           | writing                                                               |
-| `detectCi`                                                                                 | the `ci` block from environment variables (GitHub Actions, GitLab CI) |
-| `fromPlaywrightReport`, `fromImageTriples`, `inferStatus`                                  | converters                                                            |
-| `readPngSize`                                                                              | width and height from a PNG header                                    |
+| export                                                                                                               | purpose                                                               |
+| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `manifestSchema`, `./schema.json`                                                                                    | the JSON Schema                                                       |
+| `Manifest`, `ManifestEntry`, `ManifestStatus`, `ManifestCi`, `ManifestRunner`, ...                                   | the types                                                             |
+| `MANIFEST_REPORT_FORMAT`, `MANIFEST_SPEC_VERSION`, `getManifestFileName`, `isManifestFileName`, `MANIFEST_FILE_GLOB` | naming conventions                                                    |
+| `MANIFEST_STATUSES`, `NEEDS_HUMAN_STATUSES`, `needsHuman`, `summarize`, `countByStatus`                              | status vocabulary and counts                                          |
+| `parseManifest`, `parseManifestJson`, `validateManifest`, `isManifest`                                               | validation                                                            |
+| `readManifestFile`, `readManifestFiles`, `findManifestFiles`                                                         | files                                                                 |
+| `mergeManifests`, `selectEntries`, `entryKey`, `keyHash`, `platformLabel`                                            | merging                                                               |
+| `projectDirInRepo`, `toRepoPath`, `isSafeRelativePath`, `toPosix`                                                    | path helpers for approval tools                                       |
+| `ManifestWriter`, `ManifestBuilder`, `writeManifestFile`, `createManifestHeader`                                     | writing                                                               |
+| `detectCi`                                                                                                           | the `ci` block from environment variables (GitHub Actions, GitLab CI) |
+| `toCtrf`, `fromCtrf`, `toCtrfStatus`, `EXTRA_NAMESPACE`                                                              | CTRF                                                                  |
+| `fromPlaywrightReport`, `fromImageTriples`, `inferStatus`                                                            | converters                                                            |
+| `readPngSize`                                                                                                        | width and height from a PNG header                                    |
 
 ## License
 

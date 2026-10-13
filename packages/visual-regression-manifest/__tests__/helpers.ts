@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { deflateSync } from 'zlib';
 import { dir, setGracefulCleanup } from 'tmp-promise';
+import { MANIFEST_SPEC_VERSION } from '../src/constants';
+import { summarize } from '../src/summary';
 import type { Manifest, ManifestEntry } from '../src/types';
 
 setGracefulCleanup();
@@ -66,7 +68,7 @@ export const entry = (
 ): ManifestEntry => ({
   name: 'home_#0',
   test: {
-    file: 'cypress/e2e/home.cy.ts',
+    filePath: 'cypress/e2e/home.cy.ts',
     titlePath: ['home', 'renders'],
     retry: 0,
   },
@@ -88,7 +90,7 @@ export const entry = (
   baselineWritten: false,
   recordedAt: '2026-09-22T10:00:00.000Z',
   platform: {
-    os: 'linux',
+    osPlatform: 'linux',
     arch: 'x64',
     browser: { name: 'electron', version: '130' },
   },
@@ -104,15 +106,17 @@ export const manifest = (
   entries: ManifestEntry[] = [entry()],
   overrides: Partial<Manifest> = {},
 ): Manifest => ({
-  version: 1,
+  reportFormat: 'visual-regression-manifest',
+  specVersion: MANIFEST_SPEC_VERSION,
   createdAt: '2026-09-22T10:00:00.000Z',
   updatedAt: '2026-09-22T10:03:00.000Z',
   projectRoot: '/home/runner/work/r/r',
-  platform: { os: 'linux', arch: 'x64', osVersion: '6.8.0' },
+  platform: { osPlatform: 'linux', arch: 'x64', osRelease: '6.8.0' },
   ci: {
     provider: 'github',
-    repository: 'o/r',
-    sha: 'c'.repeat(40),
+    repositoryName: 'o/r',
+    repositoryUrl: 'https://github.com/o/r',
+    commit: 'c'.repeat(40),
     ref: 'refs/pull/7/merge',
     pullRequest: {
       number: 7,
@@ -120,9 +124,13 @@ export const manifest = (
       headRef: 'feat/x',
       baseRef: 'main',
     },
-    runId: '555',
+    buildId: '555',
     runAttempt: '1',
     workspace: '/home/runner/work/r/r',
+  },
+  tool: {
+    name: '@pixsame/cypress-plugin-visual-regression-diff',
+    version: '4.3.0',
   },
   options: { updateImages: 'failures-only' },
   runner: {
@@ -143,6 +151,7 @@ export const manifest = (
     viewport: { width: 1000, height: 660 },
     cloud: { runUrl: 'https://cloud.cypress.io/x', parallel: false },
   },
+  summary: summarize(overrides.entries ?? entries),
   entries,
   ...overrides,
 });

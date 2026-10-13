@@ -1,24 +1,32 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/pixsame/cypress-plugin-visual-regression-diff/main/packages/visual-regression-manifest/src/schema.json",
+  "$id": "https://visual-regression.dev/schema/v1.json",
   "title": "Visual regression run manifest",
-  "description": "A machine-readable record of every screenshot comparison made during a test run, written by a visual regression tool and read by CI tooling (PR comment bots, review dashboards, approval tools). Runner-agnostic: everything specific to the test runner lives in `runner`. Consumers must ignore keys they do not know.",
+  "description": "A machine-readable record of every screenshot comparison made during a test run, written by a visual regression tool and read by CI tooling (PR comment bots, review dashboards, approval tools). Runner-agnostic: everything specific to the test runner lives in `runner`. The envelope, the CI block and the open `extra` objects follow CTRF (ctrf.io) naming so a manifest maps onto a CTRF report without loss; see the `toCtrf`/`fromCtrf` converters. Consumers must ignore keys they do not know.",
   "type": "object",
   "required": [
-    "version",
+    "reportFormat",
+    "specVersion",
     "createdAt",
     "updatedAt",
     "projectRoot",
     "platform",
     "ci",
+    "tool",
     "options",
     "runner",
+    "summary",
     "entries"
   ],
   "properties": {
-    "version": {
-      "description": "Format version. Bumped on breaking changes to the format only.",
-      "const": 1
+    "reportFormat": {
+      "description": "Identifies the document as a visual regression manifest (CTRF has `reportFormat: \"CTRF\"`).",
+      "const": "visual-regression-manifest"
+    },
+    "specVersion": {
+      "description": "Version of this format (semver). The major is bumped on breaking changes only; readers accept every version with the major they know.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
     },
     "createdAt": {
       "description": "When the run started (ISO 8601).",
@@ -38,16 +46,19 @@
       "description": "CI metadata detected from environment variables. `null` outside CI, `{ \"provider\": null }` when only a generic `CI` flag was set.",
       "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/ci" }]
     },
+    "tool": { "$ref": "#/$defs/tool" },
     "options": {
       "description": "Global tool options as configured, in the writer's vocabulary (for the Cypress plugin: every `pluginVisualRegression*` option with the prefix stripped).",
       "type": "object"
     },
     "runner": { "$ref": "#/$defs/runner" },
     "upload": { "$ref": "#/$defs/upload" },
+    "summary": { "$ref": "#/$defs/summary" },
     "entries": {
       "type": "array",
       "items": { "$ref": "#/$defs/entry" }
-    }
+    },
+    "extra": { "$ref": "#/$defs/extra" }
   },
   "$defs": {
     "timestamp": {
@@ -56,7 +67,7 @@
       "minLength": 1
     },
     "status": {
-      "description": "`passed`: within threshold. `failed`: above threshold, `.actual` and `.diff` images kept for review. `missing-baseline`: no baseline and the tool was told not to create one. `created`: no baseline, the actual image became the baseline. `updated`: the baseline was overwritten on request. `approved`: the baseline was replaced from a review UI. `failed` and `missing-baseline` are the entries that need a human.",
+      "description": "`passed`: within threshold. `failed`: above threshold, `.actual` and `.diff` images kept for review. `missing-baseline`: no baseline and the tool was told not to create one. `created`: no baseline, the actual image became the baseline. `updated`: the baseline was overwritten on request. `approved`: the baseline was replaced from a review UI. `failed` and `missing-baseline` are the entries that need a human. In CTRF terms `missing-baseline` is `failed` and `created`, `updated`, `approved` are `passed`, with the manifest status kept in `rawStatus`.",
       "type": "string",
       "enum": [
         "passed",
@@ -67,13 +78,52 @@
         "approved"
       ]
     },
-    "platform": {
-      "description": "The machine that ran the tests (the host), which is not necessarily the device under test: for a mobile or remote-device run see the entries' `target`. `os` is an open string; Node-based writers use `process.platform` names (`linux`, `darwin`, `win32`).",
+    "tool": {
+      "description": "What wrote the manifest: a visual regression plugin, a converter, a review tool. Same shape as CTRF's `tool`.",
       "type": "object",
-      "required": ["os", "arch"],
+      "required": ["name"],
       "properties": {
-        "os": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" },
+        "extra": { "$ref": "#/$defs/extra" }
+      }
+    },
+    "summary": {
+      "description": "Counts over `entries`, so a consumer can tell whether a human is needed without reading them all. Writers recompute it on every write; readers merging several manifests recompute it from the merged entries.",
+      "type": "object",
+      "required": [
+        "entries",
+        "passed",
+        "failed",
+        "missingBaseline",
+        "created",
+        "updated",
+        "approved",
+        "needsHuman"
+      ],
+      "properties": {
+        "entries": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "missingBaseline": { "type": "integer", "minimum": 0 },
+        "created": { "type": "integer", "minimum": 0 },
+        "updated": { "type": "integer", "minimum": 0 },
+        "approved": { "type": "integer", "minimum": 0 },
+        "needsHuman": {
+          "description": "`failed` + `missingBaseline`.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "platform": {
+      "description": "The machine that ran the tests (the host), which is not necessarily the device under test: for a mobile or remote-device run see the entries' `target`. Named like CTRF's `environment`: `osPlatform` is an open string (Node-based writers use `process.platform` names: `linux`, `darwin`, `win32`), `osRelease` the kernel release, `osVersion` the human-readable OS version.",
+      "type": "object",
+      "required": ["osPlatform", "arch"],
+      "properties": {
+        "osPlatform": { "type": "string" },
         "arch": { "type": "string" },
+        "osRelease": { "type": "string" },
         "osVersion": { "type": "string" }
       }
     },
@@ -141,6 +191,7 @@
       }
     },
     "ci": {
+      "description": "Where the run happened. Keys that have a CTRF `environment` equivalent carry its name (`commit`, `branchName`, `repositoryName`, `repositoryUrl`, `buildId`, `buildName`, `buildNumber`, `buildUrl`); the rest is what CTRF lacks.",
       "type": "object",
       "required": ["provider"],
       "properties": {
@@ -148,16 +199,17 @@
           "description": "Known values: `github`, `gitlab`. Other CI systems are free-form lowercase ids; `null` when only a generic CI flag was set.",
           "type": ["string", "null"]
         },
-        "repository": {
+        "repositoryName": {
           "description": "`owner/repo` (GitHub) or `group/project` (GitLab).",
           "type": "string"
         },
-        "sha": {
+        "repositoryUrl": { "type": "string" },
+        "commit": {
           "description": "On GitHub `pull_request` events this is the synthetic merge commit; tools that write to the PR branch must use `pullRequest.headSha`.",
           "type": "string"
         },
         "ref": { "type": "string" },
-        "branch": { "type": "string" },
+        "branchName": { "type": "string" },
         "pullRequest": {
           "anyOf": [
             { "type": "null" },
@@ -174,17 +226,23 @@
           ]
         },
         "event": { "type": "string" },
-        "runId": { "type": "string" },
-        "runAttempt": { "type": "string" },
-        "runNumber": { "type": "string" },
-        "job": { "type": "string" },
-        "jobId": { "type": "string" },
-        "workflow": { "type": "string" },
-        "serverUrl": { "type": "string" },
-        "url": {
+        "buildId": {
+          "description": "The run or pipeline id (GitHub `GITHUB_RUN_ID`, GitLab `CI_PIPELINE_ID`); locates the artifacts together with `runAttempt`.",
+          "type": "string"
+        },
+        "buildName": {
+          "description": "The workflow or pipeline name.",
+          "type": "string"
+        },
+        "buildNumber": { "type": "string" },
+        "buildUrl": {
           "description": "Link to the run or job page.",
           "type": "string"
         },
+        "runAttempt": { "type": "string" },
+        "job": { "type": "string" },
+        "jobId": { "type": "string" },
+        "serverUrl": { "type": "string" },
         "workspace": {
           "description": "Absolute path of the checked-out repository on the CI machine.",
           "type": "string"
@@ -192,7 +250,7 @@
       }
     },
     "runner": {
-      "description": "What ran the tests. Only `name` is required; the remaining keys are runner vocabulary and writers may add their own.",
+      "description": "What ran the tests (Cypress, Playwright, a mobile driver), as opposed to `tool`, which wrote the manifest. Only `name` is required; the remaining keys are runner vocabulary and writers may add their own.",
       "type": "object",
       "required": ["name"],
       "properties": {
@@ -250,7 +308,19 @@
         },
         "width": { "type": "integer", "minimum": 0 },
         "height": { "type": "integer", "minimum": 0 },
-        "meta": { "$ref": "#/$defs/meta" }
+        "extra": { "$ref": "#/$defs/extra" }
+      }
+    },
+    "attachment": {
+      "description": "Any other file an entry wants to point at (a trace, a video, a DOM snapshot). Same shape as a CTRF attachment; `path` is relative to `projectRoot`.",
+      "type": "object",
+      "required": ["name", "contentType", "path"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "contentType": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "attachmentId": { "type": "string", "minLength": 1 },
+        "extra": { "$ref": "#/$defs/extra" }
       }
     },
     "subject": {
@@ -265,8 +335,8 @@
         }
       }
     },
-    "meta": {
-      "description": "Open metadata keyed by namespace; every value is an object. Consumers must ignore namespaces they do not know. Conventional namespaces: `design` (a design software source: `tool`, `file`, `node`, `version`, for example the Figma file, frame and version a baseline was exported from) and `storybook` (`args`, `globals`). Nothing here takes part in baseline identity.",
+    "extra": {
+      "description": "Open metadata keyed by namespace, like CTRF's `extra`; every value is an object. Consumers must ignore namespaces they do not know. Conventional namespaces on an entry or image: `design` (a design software source: `tool`, `file`, `node`, `version`, for example the Figma file, frame and version a baseline was exported from) and `storybook` (`args`, `globals`). `visualRegression` is reserved for the CTRF converters. Nothing here takes part in baseline identity.",
       "type": "object"
     },
     "renderer": {
@@ -335,6 +405,7 @@
       }
     },
     "entry": {
+      "description": "One screenshot comparison. Maps onto a CTRF test of `type: \"visual\"`: `name` is the test name, `test.titlePath` without its last element the suite, `test.filePath` the file path, `message` the message, `duration` the duration.",
       "type": "object",
       "required": [
         "name",
@@ -354,14 +425,22 @@
         },
         "test": {
           "type": "object",
-          "required": ["file", "titlePath", "retry"],
+          "required": ["filePath", "titlePath", "retry"],
           "properties": {
-            "file": {
+            "filePath": {
               "description": "Test file relative to `projectRoot`, `/` separators. Empty when unknown.",
               "type": "string"
             },
-            "titlePath": { "type": "array", "items": { "type": "string" } },
-            "retry": { "type": "integer", "minimum": 0 }
+            "titlePath": {
+              "description": "Describe blocks and test title, outermost first.",
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "retry": {
+              "description": "Attempt index of the test this comparison belongs to: `0` for the first attempt (CTRF's `retries` is a count, not an index).",
+              "type": "integer",
+              "minimum": 0
+            }
           }
         },
         "status": { "$ref": "#/$defs/status" },
@@ -397,17 +476,27 @@
             }
           }
         },
+        "attachments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/attachment" }
+        },
         "baselineWritten": {
           "description": "`true` whenever the baseline file was (re)written during the run, whatever the status.",
           "type": "boolean"
         },
         "recordedAt": { "$ref": "#/$defs/timestamp" },
+        "duration": {
+          "description": "How long the capture and comparison took, in milliseconds, when the writer measured it.",
+          "type": "integer",
+          "minimum": 0
+        },
         "platform": {
           "description": "Where this screenshot was taken; per entry because manifests of several machines get merged.",
           "type": "object",
-          "required": ["os"],
+          "required": ["osPlatform"],
           "properties": {
-            "os": { "type": "string" },
+            "osPlatform": { "type": "string" },
+            "osRelease": { "type": "string" },
             "osVersion": { "type": "string" },
             "arch": { "type": "string" },
             "browser": {
@@ -418,9 +507,9 @@
         },
         "target": { "$ref": "#/$defs/target" },
         "subject": { "$ref": "#/$defs/subject" },
-        "meta": { "$ref": "#/$defs/meta" },
+        "extra": { "$ref": "#/$defs/extra" },
         "variant": {
-          "description": "Producer-chosen id that tells entries of the same screenshot name apart (device, OS version, density, locale, theme, project, ...). Part of the baseline identity when merging manifests; absent, identity falls back to `platform.os` + `platform.browser.name` + renderer.",
+          "description": "Producer-chosen id that tells entries of the same screenshot name apart (device, OS version, density, locale, theme, project, ...). Part of the baseline identity when merging manifests; absent, identity falls back to `platform.osPlatform` + `platform.browser.name` + renderer.",
           "type": "string"
         },
         "viewport": { "$ref": "#/$defs/viewport" },

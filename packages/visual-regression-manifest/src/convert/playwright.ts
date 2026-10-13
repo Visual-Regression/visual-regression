@@ -9,6 +9,7 @@ import type {
   ManifestCi,
   ManifestPlatform,
   ManifestStatus,
+  ManifestTool,
 } from '../types';
 
 /**
@@ -87,6 +88,8 @@ export type FromPlaywrightReportOptions = {
   /** `null` for "not on CI"; when absent, detected from `env`. */
   ci?: ManifestCi | null;
   env?: EnvLike;
+  /** Recorded as the manifest's `tool`; defaults to this library. */
+  tool?: ManifestTool;
   options?: Record<string, unknown>;
   createdAt?: string;
 };
@@ -224,6 +227,7 @@ export const fromPlaywrightReport = (
       mode: 'run',
       projects: projects.map((p) => p.name ?? ''),
     },
+    tool: opts.tool,
     options: opts.options,
     platform: opts.hostPlatform,
     ci: opts.ci,
@@ -279,7 +283,7 @@ export const fromPlaywrightReport = (
             ? readPngSize(baselinePath)
             : readPngSize(group.expected ?? ''),
           actualSize: readPngSize(group.actual),
-          platform: browser && { os: snapshotSuffix, browser },
+          platform: browser && { osPlatform: snapshotSuffix, browser },
           recordedAt: result.startTime,
         });
       }

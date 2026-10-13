@@ -1,8 +1,12 @@
 import path from 'path';
 import type { ManifestStatus } from './types';
 
-/** Format version written into `Manifest.version`; bumped on breaking changes only. */
-export const MANIFEST_VERSION = 1 as const;
+/** Written into `Manifest.reportFormat`; what tells a manifest from any other JSON (CTRF writes `"CTRF"`). */
+export const MANIFEST_REPORT_FORMAT = 'visual-regression-manifest' as const;
+/** Format version written into `Manifest.specVersion`; the major is bumped on breaking changes only. */
+export const MANIFEST_SPEC_VERSION = '1.0.0-beta.1';
+/** `extra` namespace the CTRF converters keep the visual-specific fields under. */
+export const EXTRA_NAMESPACE = 'visualRegression';
 
 /**
  * Every writer names its file `visual-regression-manifest[.<label>].json`, so

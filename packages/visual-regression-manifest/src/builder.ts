@@ -3,27 +3,34 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { detectCi, type EnvLike } from './ci';
-import { IMAGE_SUFFIX, MANIFEST_VERSION } from './constants';
+import {
+  IMAGE_SUFFIX,
+  MANIFEST_REPORT_FORMAT,
+  MANIFEST_SPEC_VERSION,
+} from './constants';
 import {
   compareText,
   resolveInProject,
   toPosix,
   toProjectRelative,
 } from './paths';
+import { summarize } from './summary';
 import type {
   Manifest,
+  ManifestAttachment,
   ManifestCi,
   ManifestEntry,
   ManifestEntryOptions,
   ManifestEntryPlatform,
+  ManifestExtra,
   ManifestHashes,
   ManifestHeader,
-  ManifestMeta,
   ManifestPlatform,
   ManifestRenderer,
   ManifestRunner,
   ManifestStatus,
   ManifestSubject,
+  ManifestTool,
   ManifestUpload,
   ManifestTarget,
   ManifestViewport,
@@ -31,10 +38,17 @@ import type {
 
 export type ImageSize = { width: number; height: number };
 
+/** `tool` of a manifest written without naming its writer: this library. */
+export const DEFAULT_TOOL: ManifestTool = {
+  name: 'visual-regression-manifest',
+};
+
 export type ManifestHeaderInput = {
   /** Absolute path every relative path in the manifest resolves against. */
   projectRoot: string;
   runner: ManifestRunner;
+  /** What writes the manifest (your plugin, with its version); defaults to this library. */
+  tool?: ManifestTool;
   /** Global tool options as configured. */
   options?: Record<string, unknown>;
   /** Defaults to the machine this runs on. */
@@ -46,6 +60,7 @@ export type ManifestHeaderInput = {
   /** ISO 8601; defaults to now. */
   createdAt?: string;
   upload?: ManifestUpload;
+  extra?: ManifestExtra;
 };
 
 export type ManifestEntryInput = {
@@ -73,15 +88,19 @@ export type ManifestEntryInput = {
   /** Tells entries of the same screenshot name apart when manifests get merged. */
   variant?: string;
   subject?: ManifestSubject;
-  meta?: ManifestMeta;
+  extra?: ManifestExtra;
   /** Provenance of the baseline image, e.g. a `design` namespace for a design-software export. */
-  baselineMeta?: ManifestMeta;
+  baselineExtra?: ManifestExtra;
   viewport?: ManifestViewport;
   options?: ManifestEntryOptions;
   /** Defaults to a `native` renderer derived from `platform.browser`. */
   renderer?: ManifestRenderer;
   /** ISO 8601; defaults to now. */
   recordedAt?: string;
+  /** Capture plus comparison time in milliseconds. */
+  duration?: number;
+  /** Other files of the entry; paths absolute or relative to `projectRoot`. */
+  attachments?: ManifestAttachment[];
 };
 
 export type ManifestApproveInput = {
@@ -98,12 +117,13 @@ export const now = () => new Date().toISOString();
 
 /** `platform` of the machine this process runs on. */
 export const hostPlatform = (): ManifestPlatform => ({
-  os: process.platform,
+  osPlatform: process.platform,
   arch: process.arch,
-  osVersion: os.release(),
+  osRelease: os.release(),
+  osVersion: os.version(),
 });
 
-/** Fills the defaults of a run header: timestamp, host platform, CI detection, empty options. */
+/** Fills the defaults of a run header: timestamp, host platform, CI detection, this library as the tool, empty options. */
 export const createManifestHeader = (
   input: ManifestHeaderInput,
 ): ManifestHeader => ({
@@ -111,9 +131,11 @@ export const createManifestHeader = (
   projectRoot: input.projectRoot,
   platform: input.platform ?? hostPlatform(),
   ci: input.ci === undefined ? detectCi(input.env ?? process.env) : input.ci,
+  tool: input.tool ?? DEFAULT_TOOL,
   options: input.options ?? {},
   runner: input.runner,
   ...(input.upload && { upload: input.upload }),
+  ...(input.extra && { extra: input.extra }),
 });
 
 const stemOf = (file: string) => path.basename(file, path.extname(file));
@@ -180,7 +202,7 @@ const sameTitlePath = (a: string[], b: string[]) =>
 
 /** The order entries are written in: by test file, then name. */
 export const compareEntries = (a: ManifestEntry, b: ManifestEntry) =>
-  compareText(a.test.file, b.test.file) || compareText(a.name, b.name);
+  compareText(a.test.filePath, b.test.filePath) || compareText(a.name, b.name);
 
 /**
  * Builds a manifest in memory: one run header plus entries keyed by their
@@ -238,7 +260,7 @@ export class ManifestBuilder {
     const keptActual = passed ? null : actualAbs;
     const keptDiff = passed ? null : diffAbs;
     const test = {
-      file: this.testFile(input.testFile),
+      filePath: this.testFile(input.testFile),
       titlePath: input.titlePath ?? [],
       retry: input.retry ?? 0,
     };
@@ -247,11 +269,11 @@ export class ManifestBuilder {
     // left by an earlier attempt of the same test are stale
     // (without a known test identity every entry shares `('', [])`, so
     // there is nothing to tell attempts of one test from other tests)
-    if (test.retry > 0 && (test.file || test.titlePath.length > 0)) {
+    if (test.retry > 0 && (test.filePath || test.titlePath.length > 0)) {
       for (const [key, entry] of this.byActualPath) {
         if (
           entry.test.retry < test.retry &&
-          entry.test.file === test.file &&
+          entry.test.filePath === test.filePath &&
           sameTitlePath(entry.test.titlePath, test.titlePath)
         ) {
           this.byActualPath.delete(key);
@@ -271,7 +293,7 @@ export class ManifestBuilder {
         baseline: {
           path: this.relative(baselineAbs),
           ...input.baselineSize,
-          meta: input.baselineMeta,
+          extra: input.baselineExtra,
         },
         actual: {
           path: this.existingOrNull(keptActual),
@@ -279,13 +301,20 @@ export class ManifestBuilder {
         },
         diff: { path: this.existingOrNull(keptDiff) },
       },
+      attachments: input.attachments?.map((attachment) => ({
+        ...attachment,
+        path: this.relative(
+          resolveInProject(this.projectRoot, attachment.path),
+        ),
+      })),
       baselineWritten: input.baselineWritten ?? false,
       recordedAt: input.recordedAt ?? now(),
+      duration: input.duration,
       platform: input.platform,
       target: input.target,
       variant: input.variant,
       subject: input.subject,
-      meta: input.meta,
+      extra: input.extra,
       viewport: input.viewport,
       options: input.options,
       renderer: input.renderer ?? nativeRenderer(input.platform),
@@ -310,7 +339,7 @@ export class ManifestBuilder {
     const entry: ManifestEntry = {
       name: existing?.name ?? nameFromImagePath(actualAbs),
       test: existing?.test ?? {
-        file: this.testFile(input.testFile),
+        filePath: this.testFile(input.testFile),
         titlePath: [],
         retry: 0,
       },
@@ -326,11 +355,12 @@ export class ManifestBuilder {
       },
       baselineWritten: true,
       recordedAt: now(),
+      attachments: existing?.attachments,
       platform: existing?.platform,
       target: existing?.target,
       variant: existing?.variant,
       subject: existing?.subject,
-      meta: existing?.meta,
+      extra: existing?.extra,
       viewport: existing?.viewport,
       options: existing?.options,
       renderer: existing?.renderer,
@@ -357,7 +387,7 @@ export class ManifestBuilder {
     const wanted = this.testFile(file);
     let changed = false;
     for (const [key, entry] of this.byActualPath) {
-      if (entry.test.file === wanted) {
+      if (entry.test.filePath === wanted) {
         this.byActualPath.delete(key);
         changed = true;
       }
@@ -377,17 +407,22 @@ export class ManifestBuilder {
 
   /** The manifest as it would be written now. */
   toJSON(): Manifest {
+    const entries = this.entries();
     return {
-      version: MANIFEST_VERSION,
+      reportFormat: MANIFEST_REPORT_FORMAT,
+      specVersion: MANIFEST_SPEC_VERSION,
       createdAt: this.header.createdAt,
       updatedAt: now(),
       projectRoot: this.header.projectRoot,
       platform: this.header.platform,
       ci: this.header.ci,
+      tool: this.header.tool,
       options: this.header.options,
       runner: this.header.runner,
       ...(this.header.upload && { upload: this.header.upload }),
-      entries: this.entries(),
+      summary: summarize(entries),
+      entries,
+      ...(this.header.extra && { extra: this.header.extra }),
     };
   }
 }

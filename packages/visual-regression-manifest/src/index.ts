@@ -10,7 +10,9 @@ export {
   toRepoPath,
 } from './paths';
 export { readPngSize } from './png';
+export { countByStatus, summarize } from './summary';
 export {
+  DEFAULT_TOOL,
   ManifestBuilder,
   actualSiblingOf,
   baselineSiblingOf,
@@ -50,7 +52,6 @@ export {
   type ValidationIssue,
 } from './validate';
 export {
-  countByStatus,
   entryKey,
   keyHash,
   mergeManifests,
@@ -82,3 +83,18 @@ export {
   type PlaywrightSuite,
   type PlaywrightTest,
 } from './convert/playwright';
+export {
+  fromCtrf,
+  toCtrf,
+  toCtrfStatus,
+  type CtrfAttachment,
+  type CtrfEnvironment,
+  type CtrfReport,
+  type CtrfResults,
+  type CtrfSummary,
+  type CtrfTest,
+  type CtrfTestStatus,
+  type CtrfTool,
+  type FromCtrfOptions,
+  type ToCtrfOptions,
+} from './convert/ctrf';

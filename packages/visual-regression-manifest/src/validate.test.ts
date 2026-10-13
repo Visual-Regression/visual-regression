@@ -29,11 +29,11 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
           ci: null,
           options: {},
           runner: { name: 'x' },
-          platform: { os: 'linux', arch: 'x64' },
+          platform: { osPlatform: 'linux', arch: 'x64' },
         }),
       ),
     ).toEqual([]);
-    expect(agreesWithAjv({ ...manifest(), extra: 1 })).toEqual([]);
+    expect(agreesWithAjv({ ...manifest(), future: 1 })).toEqual([]);
     expect(
       agreesWithAjv(withEntry({ future: true, platform: undefined })),
     ).toEqual([]);
@@ -57,8 +57,11 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
       { path: '(root)', message: 'expected object, got "nope"' },
     ]);
     expect(agreesWithAjv(null)).toHaveLength(1);
-    expect(agreesWithAjv({ ...manifest(), version: 2 })).toEqual([
-      { path: 'version', message: 'expected 1, got 2' },
+    expect(agreesWithAjv({ ...manifest(), reportFormat: 'CTRF' })).toEqual([
+      {
+        path: 'reportFormat',
+        message: 'expected "visual-regression-manifest", got "CTRF"',
+      },
     ]);
     expect(agreesWithAjv({ ...manifest(), entries: {} })).toEqual([
       { path: 'entries', message: 'expected array, got object' },
@@ -134,14 +137,14 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
     ]);
     expect(
       agreesWithAjv(
-        withEntry({ test: { file: 'a', titlePath: 'b', retry: 0 } }),
+        withEntry({ test: { filePath: 'a', titlePath: 'b', retry: 0 } }),
       ),
     ).toEqual([
       { path: 'entries.0.test.titlePath', message: 'expected array, got "b"' },
     ]);
     expect(
       agreesWithAjv(
-        withEntry({ test: { file: 'a', titlePath: [], retry: 1.5 } }),
+        withEntry({ test: { filePath: 'a', titlePath: [], retry: 1.5 } }),
       ),
     ).toEqual([
       { path: 'entries.0.test.retry', message: 'expected integer, got 1.5' },
@@ -164,7 +167,7 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
     expect(
       agreesWithAjv(
         withEntry({
-          platform: { os: 'ios', osVersion: '18.2' },
+          platform: { osPlatform: 'ios', osVersion: '18.2' },
           renderer: { backend: 'device', name: 'iPhone 16' },
           target: {
             kind: 'mobile',
@@ -197,7 +200,9 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
     ]);
     expect(
       agreesWithAjv(withEntry({ platform: { arch: 'x64' } as never })),
-    ).toEqual([{ path: 'entries.0.platform.os', message: 'is required' }]);
+    ).toEqual([
+      { path: 'entries.0.platform.osPlatform', message: 'is required' },
+    ]);
     expect(agreesWithAjv({ ...manifest(), createdAt: 'yesterday' })).toEqual([
       {
         path: 'createdAt',
@@ -210,15 +215,15 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
     ]);
   });
 
-  it('checks the optional subject and meta of entries and images', () => {
+  it('checks the optional subject and extra of entries and images', () => {
     const design = { design: { tool: 'figma', file: 'abc', node: '12:34' } };
     expect(
       agreesWithAjv(
         withEntry({
           subject: { id: 'button--primary', kind: 'story' },
-          meta: { storybook: { args: { disabled: true } }, ...design },
+          extra: { storybook: { args: { disabled: true } }, ...design },
           images: {
-            baseline: { path: 'a.png', meta: design },
+            baseline: { path: 'a.png', extra: design },
             actual: { path: null },
             diff: { path: null },
           },
@@ -231,7 +236,66 @@ describe('validateAgainst (cross-checked with Ajv)', () => {
     expect(agreesWithAjv(withEntry({ subject: { kind: 'story' } }))).toEqual([
       { path: 'entries.0.subject.id', message: 'is required' },
     ]);
-    expect(agreesWithAjv(withEntry({ meta: 'figma' })).length).toBe(1);
+    expect(agreesWithAjv(withEntry({ extra: 'figma' })).length).toBe(1);
+  });
+
+  it('checks the CTRF-shaped envelope: tool, summary, attachments, duration', () => {
+    expect(
+      agreesWithAjv(
+        manifest([], {
+          tool: { name: 'x', version: '1', extra: { a: { b: 1 } } },
+          extra: { team: { owner: 'web' } },
+        }),
+      ),
+    ).toEqual([]);
+    expect(agreesWithAjv({ ...manifest(), specVersion: '1.0' })).toEqual([
+      {
+        path: 'specVersion',
+        message: 'must match ^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$',
+      },
+    ]);
+    expect(
+      agreesWithAjv({ ...manifest(), specVersion: '1.0.0-beta.1' }),
+    ).toEqual([]);
+    expect(agreesWithAjv(manifest([], { tool: { name: '' } }))).toEqual([
+      { path: 'tool.name', message: 'must not be empty' },
+    ]);
+    const noSummary: Partial<ReturnType<typeof manifest>> = manifest();
+    delete noSummary.summary;
+    expect(agreesWithAjv(noSummary)).toEqual([
+      { path: 'summary', message: 'is required' },
+    ]);
+    expect(
+      agreesWithAjv({
+        ...manifest(),
+        summary: { ...manifest().summary, needsHuman: -1 },
+      }),
+    ).toEqual([{ path: 'summary.needsHuman', message: 'must be >= 0' }]);
+    expect(
+      agreesWithAjv(
+        withEntry({
+          duration: 12,
+          attachments: [
+            {
+              name: 'trace',
+              contentType: 'application/zip',
+              path: 'trace.zip',
+              attachmentId: 'a1',
+              extra: { playwright: { version: '1' } },
+            },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+    expect(agreesWithAjv(withEntry({ duration: 1.5 }))).toEqual([
+      { path: 'entries.0.duration', message: 'expected integer, got 1.5' },
+    ]);
+    expect(
+      agreesWithAjv(withEntry({ attachments: [{ name: 'trace' }] })),
+    ).toEqual([
+      { path: 'entries.0.attachments.0.contentType', message: 'is required' },
+      { path: 'entries.0.attachments.0.path', message: 'is required' },
+    ]);
   });
 
   it('reports several issues at once', () => {

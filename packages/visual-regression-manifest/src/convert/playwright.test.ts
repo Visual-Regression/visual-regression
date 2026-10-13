@@ -236,7 +236,7 @@ describe('fromPlaywrightReport', () => {
       {
         name: 'footer-chromium-linux',
         test: {
-          file: 'tests/home.spec.ts',
+          filePath: 'tests/home.spec.ts',
           titlePath: ['header', 'renders'],
           retry: 0,
         },
@@ -255,7 +255,7 @@ describe('fromPlaywrightReport', () => {
         },
         baselineWritten: true,
         recordedAt: '2026-09-25T10:00:00.000Z',
-        platform: { os: 'linux', browser: { name: 'chromium' } },
+        platform: { osPlatform: 'linux', browser: { name: 'chromium' } },
         viewport: undefined,
         options: undefined,
         renderer: { backend: 'native', browser: 'chromium' },
@@ -265,7 +265,7 @@ describe('fromPlaywrightReport', () => {
       {
         name: 'header-chromium-linux',
         test: {
-          file: 'tests/home.spec.ts',
+          filePath: 'tests/home.spec.ts',
           titlePath: ['header', 'renders'],
           retry: 0,
         },
@@ -288,7 +288,7 @@ describe('fromPlaywrightReport', () => {
         },
         baselineWritten: false,
         recordedAt: '2026-09-25T10:00:00.000Z',
-        platform: { os: 'linux', browser: { name: 'chromium' } },
+        platform: { osPlatform: 'linux', browser: { name: 'chromium' } },
         viewport: undefined,
         options: undefined,
         renderer: { backend: 'native', browser: 'chromium' },
@@ -302,7 +302,7 @@ describe('fromPlaywrightReport', () => {
       {
         name: 'header-webkit-linux',
         test: {
-          file: 'tests/home.spec.ts',
+          filePath: 'tests/home.spec.ts',
           titlePath: ['header', 'renders'],
           retry: 0,
         },
@@ -321,7 +321,10 @@ describe('fromPlaywrightReport', () => {
         },
         baselineWritten: false,
         recordedAt: expect.any(String),
-        platform: { os: 'linux', browser: { name: 'webkit', version: '18' } },
+        platform: {
+          osPlatform: 'linux',
+          browser: { name: 'webkit', version: '18' },
+        },
         viewport: undefined,
         options: undefined,
         renderer: {
@@ -349,7 +352,7 @@ describe('fromPlaywrightReport', () => {
       manifest.entries.map((e) => [
         e.name,
         e.images.baseline.path,
-        e.test.file,
+        e.test.filePath,
       ]),
     ).toEqual([
       [
@@ -421,7 +424,7 @@ describe('fromPlaywrightReport', () => {
     expect(manifest.entries).toHaveLength(1);
     expect(manifest.entries[0]).toMatchObject({
       name: 'shot-linux',
-      test: { file: 'a.spec.ts', titlePath: ['t'], retry: 2 },
+      test: { filePath: 'a.spec.ts', titlePath: ['t'], retry: 2 },
       status: 'failed',
       comparison: { diffRatio: 0.5, threshold: 0 },
       images: {

@@ -55,28 +55,32 @@ const detectGitHub = (
       })
     : null;
   const serverUrl = env.GITHUB_SERVER_URL || 'https://github.com';
-  const url =
-    env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
-      ? `${serverUrl}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}${
+  const repositoryUrl = env.GITHUB_REPOSITORY
+    ? `${serverUrl}/${env.GITHUB_REPOSITORY}`
+    : undefined;
+  const buildUrl =
+    repositoryUrl && env.GITHUB_RUN_ID
+      ? `${repositoryUrl}/actions/runs/${env.GITHUB_RUN_ID}${
           env.GITHUB_RUN_ATTEMPT ? `/attempts/${env.GITHUB_RUN_ATTEMPT}` : ''
         }`
       : undefined;
 
   return compact({
     provider: 'github',
-    repository: env.GITHUB_REPOSITORY,
-    sha: env.GITHUB_SHA,
+    repositoryName: env.GITHUB_REPOSITORY,
+    repositoryUrl,
+    commit: env.GITHUB_SHA,
     ref: env.GITHUB_REF,
-    branch: env.GITHUB_HEAD_REF || env.GITHUB_REF_NAME,
+    branchName: env.GITHUB_HEAD_REF || env.GITHUB_REF_NAME,
     pullRequest,
     event: env.GITHUB_EVENT_NAME,
-    runId: env.GITHUB_RUN_ID,
+    buildId: env.GITHUB_RUN_ID,
+    buildName: env.GITHUB_WORKFLOW,
+    buildNumber: env.GITHUB_RUN_NUMBER,
+    buildUrl,
     runAttempt: env.GITHUB_RUN_ATTEMPT,
-    runNumber: env.GITHUB_RUN_NUMBER,
     job: env.GITHUB_JOB,
-    workflow: env.GITHUB_WORKFLOW,
     serverUrl,
-    url,
     workspace: env.GITHUB_WORKSPACE,
   });
 };
@@ -87,10 +91,11 @@ const detectGitLab = (env: EnvLike): ManifestCi => {
     : undefined;
   return compact({
     provider: 'gitlab',
-    repository: env.CI_PROJECT_PATH,
-    sha: env.CI_COMMIT_SHA,
+    repositoryName: env.CI_PROJECT_PATH,
+    repositoryUrl: env.CI_PROJECT_URL,
+    commit: env.CI_COMMIT_SHA,
     ref: env.CI_COMMIT_REF_NAME,
-    branch: env.CI_COMMIT_BRANCH || env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME,
+    branchName: env.CI_COMMIT_BRANCH || env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME,
     pullRequest: number
       ? compact({
           number,
@@ -100,11 +105,13 @@ const detectGitLab = (env: EnvLike): ManifestCi => {
         })
       : null,
     event: env.CI_PIPELINE_SOURCE,
-    runId: env.CI_PIPELINE_ID,
+    buildId: env.CI_PIPELINE_ID,
+    buildName: env.CI_PIPELINE_NAME,
+    buildNumber: env.CI_PIPELINE_IID,
+    buildUrl: env.CI_JOB_URL,
     job: env.CI_JOB_NAME,
     jobId: env.CI_JOB_ID,
     serverUrl: env.CI_SERVER_URL,
-    url: env.CI_JOB_URL,
     workspace: env.CI_PROJECT_DIR,
   });
 };

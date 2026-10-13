@@ -48,7 +48,7 @@ describe('fromImageTriples', () => {
     expect(manifest.entries).toMatchObject([
       {
         name: 'about',
-        test: { file: '' },
+        test: { filePath: '' },
         status: 'passed',
         images: {
           baseline: { path: 'shots/about.png', width: 2, height: 2 },
@@ -69,7 +69,7 @@ describe('fromImageTriples', () => {
       },
       {
         name: 'home',
-        test: { file: 'e2e/home.spec.ts', titlePath: ['home'] },
+        test: { filePath: 'e2e/home.spec.ts', titlePath: ['home'] },
         status: 'failed',
         comparison: { diffRatio: 0.2, threshold: 0.1 },
         images: {

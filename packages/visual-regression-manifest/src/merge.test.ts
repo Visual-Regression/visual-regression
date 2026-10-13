@@ -8,7 +8,6 @@ import {
   OTHER_SHA,
 } from '../__tests__/helpers';
 import {
-  countByStatus,
   entryKey,
   keyHash,
   mergeManifests,
@@ -17,6 +16,7 @@ import {
   selectEntries,
   type ManifestSource,
 } from './merge';
+import { countByStatus } from './summary';
 
 type Source = ManifestSource & { artifactId: number };
 
@@ -31,7 +31,10 @@ describe('entryKey', () => {
   it('distinguishes platforms and is stable', () => {
     const a = entry();
     const b = entry({
-      platform: { os: 'darwin', browser: { name: 'chrome', version: '1' } },
+      platform: {
+        osPlatform: 'darwin',
+        browser: { name: 'chrome', version: '1' },
+      },
     });
     expect(entryKey(a)).not.toBe(entryKey(b));
     expect(keyHash(entryKey(a))).toMatch(/^[0-9a-f]{12}$/);
@@ -70,7 +73,10 @@ describe('mergeManifests', () => {
       [
         entry({
           name: 'about_#0',
-          platform: { os: 'darwin', browser: { name: 'chrome', version: '1' } },
+          platform: {
+            osPlatform: 'darwin',
+            browser: { name: 'chrome', version: '1' },
+          },
         }),
       ],
       { ci: null },
@@ -81,7 +87,7 @@ describe('mergeManifests', () => {
         source(first),
         source(other, { artifactId: 11 }),
       ],
-      { headSha: HEAD_SHA, runId: 555, repository: 'o/r' },
+      { headSha: HEAD_SHA, buildId: 555, repositoryName: 'o/r' },
     );
     expect(
       run.entries.map((e) => [e.entry.name, e.entry.status, e.runAttempt]),
@@ -113,14 +119,14 @@ describe('mergeManifests', () => {
       ci: {
         ...must(manifest().ci),
         pullRequest: { number: 7, headSha: OTHER_SHA },
-        runId: '1',
-        repository: 'x/y',
+        buildId: '1',
+        repositoryName: 'x/y',
       },
     });
     const { warnings } = mergeManifests([source(m), { manifest: m }], {
       headSha: HEAD_SHA,
-      runId: '555',
-      repository: 'o/r',
+      buildId: '555',
+      repositoryName: 'o/r',
     });
     expect(warnings).toHaveLength(6);
     expect(warnings[0]).toMatch(/^test:cypress.*written for commit bbbbbbb/);
@@ -185,7 +191,10 @@ describe('mergeManifests', () => {
   it('detects two platforms writing the same baseline', () => {
     const linux = entry();
     const mac = entry({
-      platform: { os: 'darwin', browser: { name: 'chrome', version: '1' } },
+      platform: {
+        osPlatform: 'darwin',
+        browser: { name: 'chrome', version: '1' },
+      },
     });
     const run = mergeManifests([source(manifest([linux, mac]))]);
     expect(run.needsHuman).toHaveLength(2);
@@ -209,7 +218,10 @@ describe('selectEntries', () => {
         entry({ name: 'about_#0' }),
         entry({
           name: 'about_#0',
-          platform: { os: 'darwin', browser: { name: 'chrome', version: '1' } },
+          platform: {
+            osPlatform: 'darwin',
+            browser: { name: 'chrome', version: '1' },
+          },
         }),
       ]),
     ),
@@ -240,9 +252,9 @@ describe('selectEntries', () => {
 });
 
 describe('producer-chosen variant', () => {
-  const base = {
+  const base: ManifestEntry = {
     name: 'home',
-    test: { file: '', titlePath: [], retry: 0 },
+    test: { filePath: '', titlePath: [], retry: 0 },
     status: 'passed',
     comparison: { diffRatio: 0, threshold: 0 },
     images: {
@@ -253,24 +265,32 @@ describe('producer-chosen variant', () => {
     baselineWritten: false,
     recordedAt: '2026-01-01T00:00:00.000Z',
     message: '',
-  } as const;
+  };
 
-  it('keeps subject and meta out of the baseline identity', () => {
+  it('keeps subject and extra out of the baseline identity', () => {
     const a = { ...base, subject: { id: 'button--primary' } };
-    const b = { ...base, meta: { design: { tool: 'figma' } } };
+    const b = { ...base, extra: { design: { tool: 'figma' } } };
     expect(entryKey(a)).toBe(entryKey(b));
     expect(entryKey(a)).toBe(entryKey(base));
   });
 
   it('keeps entries of one screenshot on different variants apart', () => {
-    const a = { ...base, platform: { os: 'ios' }, variant: 'iphone-se' };
-    const b = { ...base, platform: { os: 'ios' }, variant: 'iphone-16' };
+    const a = {
+      ...base,
+      platform: { osPlatform: 'ios' },
+      variant: 'iphone-se',
+    };
+    const b = {
+      ...base,
+      platform: { osPlatform: 'ios' },
+      variant: 'iphone-16',
+    };
     expect(entryKey(a)).not.toBe(entryKey(b));
     expect(platformLabel(a)).toBe('ios / iphone-se');
   });
 
   it('falls back to os and browser without a variant, and works without a browser', () => {
-    const entry = { ...base, platform: { os: 'macos' } };
+    const entry = { ...base, platform: { osPlatform: 'macos' } };
     expect(entryKey(entry)).toBe(entryKey({ ...entry }));
     expect(platformLabel(entry)).toBe('macos');
     expect(

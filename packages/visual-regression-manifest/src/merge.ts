@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
-import { MANIFEST_STATUSES, needsHuman } from './constants';
+import { needsHuman } from './constants';
 import { compareText, projectDirInRepo, toRepoPath } from './paths';
+import { countByStatus } from './summary';
 import type { Manifest, ManifestEntry, ManifestStatus } from './types';
 
 export type ManifestSource = {
@@ -42,10 +43,10 @@ export type MergedRun<S extends ManifestSource = ManifestSource> = {
 export type MergeOptions = {
   /** Commit the merged run is for; manifests written for another commit produce a warning. */
   headSha?: string;
-  /** CI run id the merged run is for; manifests of another run produce a warning. */
-  runId?: string | number;
+  /** CI run id (`ci.buildId`) the merged run is for; manifests of another run produce a warning. */
+  buildId?: string | number;
   /** `owner/repo` the merged run is for. */
-  repository?: string;
+  repositoryName?: string;
   /** Directory of the project inside the repository, for manifests without `ci.workspace`. */
   projectRootHint?: string;
 };
@@ -67,8 +68,8 @@ export const rendererLabel = (entry: ManifestEntry) => {
 export const entryKey = (entry: ManifestEntry) =>
   [
     entry.name,
-    entry.test.file,
-    entry.platform?.os ?? '',
+    entry.test.filePath,
+    entry.platform?.osPlatform ?? '',
     entry.platform?.browser?.name ?? '',
     rendererLabel(entry),
     entry.variant ?? '',
@@ -79,7 +80,7 @@ export const keyHash = (key: string) =>
 
 /** `linux / chrome`, `linux / chrome (docker chromium)`, or `''` when the entry has no platform. */
 export const platformLabel = (entry: ManifestEntry) => {
-  const os = entry.platform?.os;
+  const os = entry.platform?.osPlatform;
   const browser = entry.platform?.browser?.name;
   const platform = [os, browser, entry.variant].filter(Boolean).join(' / ');
   const renderer = rendererLabel(entry);
@@ -87,18 +88,8 @@ export const platformLabel = (entry: ManifestEntry) => {
   return platform ? `${platform} (${renderer})` : renderer;
 };
 
-export const countByStatus = (
-  entries: readonly ManifestEntry[],
-): Record<ManifestStatus, number> => {
-  const counts = Object.fromEntries(
-    MANIFEST_STATUSES.map((status) => [status, 0]),
-  ) as Record<ManifestStatus, number>;
-  for (const entry of entries) counts[entry.status] += 1;
-  return counts;
-};
-
 const compareMerged = (a: MergedEntry, b: MergedEntry) =>
-  compareText(a.entry.test.file, b.entry.test.file) ||
+  compareText(a.entry.test.filePath, b.entry.test.filePath) ||
   compareText(a.entry.name, b.entry.name) ||
   compareText(platformLabel(a.entry), platformLabel(b.entry));
 
@@ -139,21 +130,21 @@ export const mergeManifests = <S extends ManifestSource>(
         );
       }
       if (
-        opts.runId !== undefined &&
-        ci.runId &&
-        String(ci.runId) !== String(opts.runId)
+        opts.buildId !== undefined &&
+        ci.buildId &&
+        String(ci.buildId) !== String(opts.buildId)
       ) {
         warnings.push(
-          `${where}: manifest belongs to run ${ci.runId}, not ${opts.runId}`,
+          `${where}: manifest belongs to run ${ci.buildId}, not ${opts.buildId}`,
         );
       }
       if (
-        opts.repository &&
-        ci.repository &&
-        ci.repository !== opts.repository
+        opts.repositoryName &&
+        ci.repositoryName &&
+        ci.repositoryName !== opts.repositoryName
       ) {
         warnings.push(
-          `${where}: manifest belongs to ${ci.repository}, not ${opts.repository}`,
+          `${where}: manifest belongs to ${ci.repositoryName}, not ${opts.repositoryName}`,
         );
       }
     }

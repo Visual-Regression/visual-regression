@@ -24,7 +24,7 @@ describe('parseManifest', () => {
 
   it('throws a ManifestParseError naming the source and the first issues', () => {
     expect(() =>
-      parseManifest({ ...manifest(), version: 2 }, 'x.json'),
+      parseManifest({ ...manifest(), specVersion: 'two' }, 'x.json'),
     ).toThrow(ManifestParseError);
     expect(() => parseManifest('nope', 'test:m.json')).toThrow(
       'Invalid manifest test:m.json: (root): expected object, got "nope"',
@@ -32,7 +32,7 @@ describe('parseManifest', () => {
     expect(isManifest('nope')).toBe(false);
     let error: ManifestParseError | undefined;
     try {
-      parseManifest({ version: 1 });
+      parseManifest({ reportFormat: 'visual-regression-manifest' });
     } catch (e) {
       error = e as ManifestParseError;
     }
@@ -43,7 +43,7 @@ describe('parseManifest', () => {
 
   it('parses raw JSON text and reports syntax errors as issues', () => {
     expect(parseManifestJson(JSON.stringify(manifest()))).toMatchObject({
-      version: 1,
+      reportFormat: 'visual-regression-manifest',
     });
     expect(() => parseManifestJson('{', 'broken.json')).toThrow(
       /Invalid manifest broken.json: \(root\): not valid JSON/,
@@ -51,7 +51,9 @@ describe('parseManifest', () => {
   });
 
   it('exposes the schema', () => {
-    expect(manifestSchema.$id).toMatch(/schema\.json$/);
+    expect(manifestSchema.$id).toBe(
+      'https://visual-regression.dev/schema/v1.json',
+    );
   });
 });
 
@@ -88,9 +90,12 @@ describe('files', () => {
   it('names the file when it is invalid', async () => {
     const root = await tmpDir();
     const file = path.join(root, 'visual-regression-manifest.json');
-    fs.writeFileSync(file, JSON.stringify({ ...manifest(), version: 3 }));
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ ...manifest(), specVersion: 'three' }),
+    );
     expect(() => readManifestFile(file)).toThrow(
-      `Invalid manifest ${file}: version: expected 1, got 3`,
+      new RegExp(`Invalid manifest .*: specVersion: must match`),
     );
   });
 });

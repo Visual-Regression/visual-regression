@@ -7,6 +7,7 @@ import {
   actualSiblingOf,
   baselineSiblingOf,
   createManifestHeader,
+  DEFAULT_TOOL,
   diffSiblingOf,
   ManifestBuilder,
   nameFromImagePath,
@@ -31,11 +32,16 @@ describe('createManifestHeader', () => {
       createdAt: expect.any(String),
       projectRoot: '/p',
       platform: {
-        os: process.platform,
+        osPlatform: process.platform,
         arch: process.arch,
+        osRelease: expect.any(String),
         osVersion: expect.any(String),
       },
-      ci: expect.objectContaining({ provider: 'github', repository: 'o/r' }),
+      ci: expect.objectContaining({
+        provider: 'github',
+        repositoryName: 'o/r',
+      }),
+      tool: DEFAULT_TOOL,
       options: {},
       runner,
     });
@@ -47,7 +53,7 @@ describe('createManifestHeader', () => {
       runner,
       ci: null,
       createdAt: '2026-01-01T00:00:00.000Z',
-      platform: { os: 'linux', arch: 'arm64' },
+      platform: { osPlatform: 'linux', arch: 'arm64' },
       options: { a: 1 },
       upload: { buildId: 'b', url: 'u', level: 'images' },
       env: { GITHUB_ACTIONS: 'true' },
@@ -55,8 +61,9 @@ describe('createManifestHeader', () => {
     expect(header).toEqual({
       createdAt: '2026-01-01T00:00:00.000Z',
       projectRoot: '/p',
-      platform: { os: 'linux', arch: 'arm64' },
+      platform: { osPlatform: 'linux', arch: 'arm64' },
       ci: null,
+      tool: DEFAULT_TOOL,
       options: { a: 1 },
       runner,
       upload: { buildId: 'b', url: 'u', level: 'images' },
@@ -75,7 +82,7 @@ describe('path helpers', () => {
     expect(actualSiblingOf('/x/home.png')).toBe('/x/home.actual.png');
     expect(nativeRenderer(undefined)).toBeUndefined();
     expect(
-      nativeRenderer({ os: 'linux', browser: { name: 'chrome' } }),
+      nativeRenderer({ osPlatform: 'linux', browser: { name: 'chrome' } }),
     ).toEqual({ backend: 'native', browser: 'chrome' });
   });
 });
@@ -101,7 +108,10 @@ describe('ManifestBuilder', () => {
       diffRatio: 0.25,
       threshold: 0.01,
       actualSize: { width: 3, height: 2 },
-      platform: { os: 'linux', browser: { name: 'chrome', version: '130' } },
+      platform: {
+        osPlatform: 'linux',
+        browser: { name: 'chrome', version: '130' },
+      },
       viewport: { width: 1280, height: 720 },
       message: 'differs',
     });
@@ -109,7 +119,7 @@ describe('ManifestBuilder', () => {
     expect(entry).toEqual({
       name: 'home_#0',
       test: {
-        file: 'e2e/home.spec.ts',
+        filePath: 'e2e/home.spec.ts',
         titlePath: ['home', 'renders'],
         retry: 0,
       },
@@ -122,7 +132,10 @@ describe('ManifestBuilder', () => {
       },
       baselineWritten: false,
       recordedAt: expect.any(String),
-      platform: { os: 'linux', browser: { name: 'chrome', version: '130' } },
+      platform: {
+        osPlatform: 'linux',
+        browser: { name: 'chrome', version: '130' },
+      },
       viewport: { width: 1280, height: 720 },
       options: undefined,
       renderer: { backend: 'native', browser: 'chrome', browserVersion: '130' },
@@ -143,7 +156,7 @@ describe('ManifestBuilder', () => {
     });
     expect(entry).toMatchObject({
       name: 'home',
-      test: { file: '', titlePath: [], retry: 0 },
+      test: { filePath: '', titlePath: [], retry: 0 },
       comparison: { diffRatio: 0, threshold: 0 },
       images: {
         baseline: { path: 'base/home.png' },
@@ -165,7 +178,7 @@ describe('ManifestBuilder', () => {
       diffPath: 'out/d.png',
       name: 'custom',
       status: 'failed',
-      platform: { os: 'linux', browser: { name: 'chrome' } },
+      platform: { osPlatform: 'linux', browser: { name: 'chrome' } },
       renderer: {
         backend: 'docker',
         browser: 'chromium',
@@ -186,7 +199,7 @@ describe('ManifestBuilder', () => {
     ).toBeNull();
   });
 
-  it('records a subject and meta, and keeps them when approved', async () => {
+  it('records a subject and extra, and keeps them when approved', async () => {
     const root = await tmpDir();
     writePng(path.join(root, 'out', 'a.png'));
     const builder = builderIn(root);
@@ -196,17 +209,17 @@ describe('ManifestBuilder', () => {
       baselinePath: 'b.png',
       status: 'failed',
       subject: { id: 'button--primary', kind: 'story' },
-      meta: { storybook: { globals: { theme: 'dark' } } },
-      baselineMeta: design,
+      extra: { storybook: { globals: { theme: 'dark' } } },
+      baselineExtra: design,
     });
     expect(entry.subject).toEqual({ id: 'button--primary', kind: 'story' });
-    expect(entry.meta).toEqual({ storybook: { globals: { theme: 'dark' } } });
-    expect(entry.images.baseline.meta).toEqual(design);
+    expect(entry.extra).toEqual({ storybook: { globals: { theme: 'dark' } } });
+    expect(entry.images.baseline.extra).toEqual(design);
 
     const approved = builder.approve({ actualPath: 'out/a.png' });
     expect(approved.subject).toEqual(entry.subject);
-    expect(approved.meta).toEqual(entry.meta);
-    expect(approved.images.baseline.meta).toEqual(design);
+    expect(approved.extra).toEqual(entry.extra);
+    expect(approved.images.baseline.extra).toEqual(design);
   });
 
   it('dedupes by actual path and keeps paths outside the project resolvable', async () => {
@@ -346,14 +359,14 @@ describe('ManifestBuilder', () => {
       diffRatio: 0.3,
       threshold: 0.01,
       actualSize: { width: 10, height: 10 },
-      platform: { os: 'linux', browser: { name: 'chrome' } },
+      platform: { osPlatform: 'linux', browser: { name: 'chrome' } },
     });
     writePng(path.join(root, 'shots', 'home.png'), 10, 10, 7);
 
     const approved = builder.approve({ actualPath: 'shots/home.actual.png' });
     expect(approved).toEqual({
       name: 'home',
-      test: { file: 'e2e/home.spec.ts', titlePath: ['home'], retry: 0 },
+      test: { filePath: 'e2e/home.spec.ts', titlePath: ['home'], retry: 0 },
       status: 'approved',
       comparison: { diffRatio: 0.3, threshold: 0.01 },
       images: {
@@ -363,7 +376,7 @@ describe('ManifestBuilder', () => {
       },
       baselineWritten: true,
       recordedAt: expect.any(String),
-      platform: { os: 'linux', browser: { name: 'chrome' } },
+      platform: { osPlatform: 'linux', browser: { name: 'chrome' } },
       viewport: undefined,
       options: undefined,
       renderer: { backend: 'native', browser: 'chrome' },
@@ -380,7 +393,7 @@ describe('ManifestBuilder', () => {
     });
     expect(fresh).toMatchObject({
       name: 'x',
-      test: { file: 'e2e/x.spec.ts', titlePath: [], retry: 0 },
+      test: { filePath: 'e2e/x.spec.ts', titlePath: [], retry: 0 },
       status: 'approved',
       comparison: { diffRatio: 0, threshold: 0 },
       images: {
@@ -411,7 +424,9 @@ describe('ManifestBuilder', () => {
     });
     expect(builder.dropTestFile('nope.spec.ts')).toBe(false);
     expect(builder.dropTestFile(path.join(root, 'a.spec.ts'))).toBe(true);
-    expect(builder.entries().map((e) => e.test.file)).toEqual(['b.spec.ts']);
+    expect(builder.entries().map((e) => e.test.filePath)).toEqual([
+      'b.spec.ts',
+    ]);
     builder.clear();
     expect(builder.size).toBe(0);
   });
@@ -451,7 +466,7 @@ describe('ManifestBuilder', () => {
         actualPath: 'a.png',
         baselinePath: 'a.png',
         status: 'passed',
-      }).test.file;
+      }).test.filePath;
     expect(file('./e2e/a.spec.ts')).toBe('e2e/a.spec.ts');
     expect(file('e2e//a.spec.ts')).toBe('e2e/a.spec.ts');
     expect(builder.dropTestFile('./e2e/a.spec.ts')).toBe(true);
@@ -472,18 +487,33 @@ describe('ManifestBuilder', () => {
     });
     const json = builder.toJSON();
     expect(Object.keys(json)).toEqual([
-      'version',
+      'reportFormat',
+      'specVersion',
       'createdAt',
       'updatedAt',
       'projectRoot',
       'platform',
       'ci',
+      'tool',
       'options',
       'runner',
       'upload',
+      'summary',
       'entries',
     ]);
-    expect(json.version).toBe(1);
+    expect(json.reportFormat).toBe('visual-regression-manifest');
+    expect(json.specVersion).toMatch(/^1\./);
+    expect(json.tool).toEqual(DEFAULT_TOOL);
+    expect(json.summary).toEqual({
+      entries: 1,
+      passed: 1,
+      failed: 0,
+      missingBaseline: 0,
+      created: 0,
+      updated: 0,
+      approved: 0,
+      needsHuman: 0,
+    });
     expect(json.entries).toHaveLength(1);
     expect(Object.keys(builderIn(root).toJSON())).not.toContain('upload');
   });
