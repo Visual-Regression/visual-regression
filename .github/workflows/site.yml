@@ -1,0 +1,64 @@
+name: Site
+# Always triggered so the required `site` check reports on every PR (a workflow skipped by
+# `on.paths` leaves it pending and blocks the merge). The `changes` job decides whether the site
+# is built; a job skipped by `if` counts as passing. Package-only changes cost one tiny job.
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# A newer push to the same PR cancels the running check; a deploy from main is never cancelled.
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      # On push the filter diffs commits locally; on pull_request it uses the API.
+      - uses: actions/checkout@v7
+        if: github.event_name != 'pull_request'
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            site:
+              - 'apps/site/**'
+              - 'packages/visual-regression-manifest/README.md'
+              - 'packages/visual-regression-manifest/src/schema.json'
+              - '.github/workflows/site.yml'
+              - 'pnpm-lock.yaml'
+
+  site:
+    name: site
+    needs: [changes]
+    if: ${{ needs.changes.outputs.site == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          # only the site and its workspace dependencies, not the packages' toolchains
+          install-filter: --filter @visual-regression/site...
+      - name: Formatting (cheapest first)
+        run: pnpm --filter @visual-regression/site format:ci
+      - name: Build (static generate)
+        run: pnpm --filter @visual-regression/site build
+      # Same job as the build, so the deployed output is exactly what was built
+      # (no second runner, no second install: billed minutes).
+      - name: Deploy to Cloudflare Pages
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        working-directory: apps/site
+        run: pnpm dlx wrangler@4.40.0 pages deploy .output/public --project-name visual-regression-dev --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

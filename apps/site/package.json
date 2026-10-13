@@ -1,0 +1,23 @@
+{
+  "name": "@visual-regression/site",
+  "private": true,
+  "type": "module",
+  "description": "visual-regression.dev: learn visual regression testing, compare the tools, and the visual-regression-manifest spec. Statically generated with Docus.",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "format": "prettier --write .",
+    "format:ci": "prettier --check ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "docus": "^5.14.0",
+    "nuxt": "^4.4.8"
+  },
+  "devDependencies": {
+    "@frsource/prettier-config": "^1.11.0",
+    "prettier": "3.9.9"
+  }
+}
