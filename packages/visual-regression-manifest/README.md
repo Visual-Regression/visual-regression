@@ -12,7 +12,7 @@
 
 A **run manifest** is one JSON file per test run that lists every screenshot comparison the run made: which test it came from, whether it passed, failed, created or updated its baseline, the diff ratio, and where the baseline, actual and diff images are. Next to the entries it records where the run happened (CI provider, repository, commit, pull request, build id) and what it ran with (tool, runner, browser, options), so a tool that runs _after_ the tests (a PR comment bot, a review dashboard, an approval tool) reads one file instead of parsing logs or walking the snapshots directory.
 
-The format is **runner-agnostic**: the same file is written by the [pixsame](https://pixsame.com) Cypress and Playwright integrations and by the converters in this package for tools that write no manifest of their own (Playwright's own `toHaveScreenshot`, any tool that leaves image files behind). Only the `runner` block carries runner vocabulary.
+The format is **runner-agnostic**: the same file is written by the [pixsame](https://pixsame.com) Cypress and Playwright integrations and by the converters in this package for tools that write no manifest of their own (Playwright's `toHaveScreenshot`, Vitest's `toMatchScreenshot`, jest-image-snapshot and cypress-image-snapshot, cypress-visual-regression, BackstopJS, Roborazzi, and any tool that leaves image files behind). Only the `runner` block carries runner vocabulary.
 
 It is **built upon [CTRF](https://ctrf.io)**, the Common Test Report Format: the envelope (`reportFormat`, `specVersion`), `tool`, `summary`, the CI and platform fields and the open `extra` objects carry CTRF's names, so a manifest converts to a CTRF report and back without renaming anything ([`toCtrf` / `fromCtrf`](#ctrf)). What CTRF has no field for, a visual comparison's three images, its statuses, diff ratio and threshold, is what this format adds.
 
@@ -333,6 +333,93 @@ writeManifestFile(
 
 Only comparisons that left files behind can be recovered: `failed` (expected, actual and diff attachments), `missing-baseline` and `created` (actual only). A passing `toHaveScreenshot` leaves no trace in the report, and of a retried test only the last attempt counts. Baseline paths are computed from the snapshot path template because the report only lists the copies in `test-results`; the diff ratio is parsed from the assertion message.
 
+### Vitest's `toMatchScreenshot`
+
+Vitest (browser mode) keeps references in `__screenshots__/<test file>/` next to the tests and writes `<name>-actual.png` and `<name>-diff.png` under `.vitest/attachments/<test file>/` for failed comparisons. The converter scans the project for both:
+
+```ts
+import { fromVitestScreenshots } from 'visual-regression-manifest';
+
+const manifest = fromVitestScreenshots({
+  projectRoot: process.cwd(),
+  threshold: 0.01, // your allowedMismatchedPixelRatio
+  // roots: ['src', 'tests'], screenshotsDirName, attachmentsDir: when changed
+});
+```
+
+A reference without attachments passed, attachments without a reference are `missing-baseline`, and the browser and platform are read off the file name (`button-chromium-darwin`).
+
+### jest-image-snapshot and cypress-image-snapshot
+
+Baselines are `<id>-snap.png` in `__image_snapshots__/`; failures leave `<id>-diff.png` (a baseline | diff | received composite unless `onlyDiff`) in `__image_snapshots__/__diff_output__/`, plus `<id>-received.png` when `storeReceivedOnFailure` is on:
+
+```ts
+import { fromJestImageSnapshots } from 'visual-regression-manifest';
+
+const manifest = fromJestImageSnapshots({
+  projectRoot: process.cwd(),
+  runner: { name: 'cypress' }, // for cypress-image-snapshot; defaults to jest
+  // snapshotsDirName, diffDirName, receivedDirName, snapshotPostfix, diffPostfix, receivedPostfix: when customised
+});
+```
+
+The received image is the entry's `actual` when it exists; the diff composite is the entry's `diff` image either way.
+
+### cypress-visual-regression
+
+Reads the `base`, `actual` and `diff` folders (`cypress/snapshots/...` by default), nested by spec file:
+
+```ts
+import { fromCypressVisualRegression } from 'visual-regression-manifest';
+
+const manifest = fromCypressVisualRegression({
+  projectRoot: process.cwd(),
+  threshold: 0.05, // your errorThreshold
+  // baseDirectory, actualDirectory, diffDirectory, generateDiff: when changed
+});
+```
+
+Cypress writes an actual image for every comparison, so a diff image is what marks a failure (`visualRegressionGenerateDiff: 'fail'`, the default); pass `generateDiff` when the run used another mode.
+
+### BackstopJS
+
+With `"report": ["json"]` BackstopJS writes `backstop_data/json_report/jsonReport.json`. Its paths are relative to that directory:
+
+```ts
+import fs from 'fs';
+import { fromBackstopReport } from 'visual-regression-manifest';
+
+const manifest = fromBackstopReport(
+  JSON.parse(
+    fs.readFileSync('backstop_data/json_report/jsonReport.json', 'utf8'),
+  ),
+  { projectRoot: process.cwd() }, // reportDir: when json_report was moved
+);
+```
+
+One entry per scenario and viewport (`titlePath: [label, viewportLabel]`, `variant: viewportLabel`), the mismatch percentage as `diffRatio`, `misMatchThreshold` as `threshold`, a `Reference file not found` error as `missing-baseline`, and the scenario's `url`, `selector` and the raw `diff` block under `extra.backstop`.
+
+### Roborazzi
+
+`compareRoborazzi*` and `recordRoborazzi*` write `build/test-results/roborazzi/<variant>/results-summary.json` with absolute paths:
+
+```ts
+import fs from 'fs';
+import { fromRoborazziResults } from 'visual-regression-manifest';
+
+const manifest = fromRoborazziResults(
+  JSON.parse(
+    fs.readFileSync(
+      'build/test-results/roborazzi/debug/results-summary.json',
+      'utf8',
+    ),
+  ),
+  { projectRoot: process.cwd(), threshold: 0.01 }, // your changeThreshold
+);
+```
+
+`changed` is `failed` (with `diff_percentage` as the ratio and the `_compare` composite as the diff image), `added` is `missing-baseline`, `unchanged` is `passed` and `recorded` is `updated`. Entries carry an emulated Android `target` and a `robolectric` renderer; `context_data` lands under `extra.roborazzi`.
+
 ### Plain image files
 
 For any tool that leaves a baseline and, on failure, an actual and a diff image next to it:
@@ -351,21 +438,21 @@ The status is inferred from which files exist (`inferStatus`), image sizes are r
 
 ## Reference
 
-| export                                                                                                               | purpose                                                               |
-| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `manifestSchema`, `./schema.json`                                                                                    | the JSON Schema                                                       |
-| `Manifest`, `ManifestEntry`, `ManifestStatus`, `ManifestCi`, `ManifestRunner`, ...                                   | the types                                                             |
-| `MANIFEST_REPORT_FORMAT`, `MANIFEST_SPEC_VERSION`, `getManifestFileName`, `isManifestFileName`, `MANIFEST_FILE_GLOB` | naming conventions                                                    |
-| `MANIFEST_STATUSES`, `NEEDS_HUMAN_STATUSES`, `needsHuman`, `summarize`, `countByStatus`                              | status vocabulary and counts                                          |
-| `parseManifest`, `parseManifestJson`, `validateManifest`, `isManifest`                                               | validation                                                            |
-| `readManifestFile`, `readManifestFiles`, `findManifestFiles`                                                         | files                                                                 |
-| `mergeManifests`, `selectEntries`, `entryKey`, `keyHash`, `platformLabel`                                            | merging                                                               |
-| `projectDirInRepo`, `toRepoPath`, `isSafeRelativePath`, `toPosix`                                                    | path helpers for approval tools                                       |
-| `ManifestWriter`, `ManifestBuilder`, `writeManifestFile`, `createManifestHeader`                                     | writing                                                               |
-| `detectCi`                                                                                                           | the `ci` block from environment variables (GitHub Actions, GitLab CI) |
-| `toCtrf`, `fromCtrf`, `toCtrfStatus`, `EXTRA_NAMESPACE`                                                              | CTRF                                                                  |
-| `fromPlaywrightReport`, `fromImageTriples`, `inferStatus`                                                            | converters                                                            |
-| `readPngSize`                                                                                                        | width and height from a PNG header                                    |
+| export                                                                                                                                                                                    | purpose                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `manifestSchema`, `./schema.json`                                                                                                                                                         | the JSON Schema                                                       |
+| `Manifest`, `ManifestEntry`, `ManifestStatus`, `ManifestCi`, `ManifestRunner`, ...                                                                                                        | the types                                                             |
+| `MANIFEST_REPORT_FORMAT`, `MANIFEST_SPEC_VERSION`, `getManifestFileName`, `isManifestFileName`, `MANIFEST_FILE_GLOB`                                                                      | naming conventions                                                    |
+| `MANIFEST_STATUSES`, `NEEDS_HUMAN_STATUSES`, `needsHuman`, `summarize`, `countByStatus`                                                                                                   | status vocabulary and counts                                          |
+| `parseManifest`, `parseManifestJson`, `validateManifest`, `isManifest`                                                                                                                    | validation                                                            |
+| `readManifestFile`, `readManifestFiles`, `findManifestFiles`                                                                                                                              | files                                                                 |
+| `mergeManifests`, `selectEntries`, `entryKey`, `keyHash`, `platformLabel`                                                                                                                 | merging                                                               |
+| `projectDirInRepo`, `toRepoPath`, `isSafeRelativePath`, `toPosix`                                                                                                                         | path helpers for approval tools                                       |
+| `ManifestWriter`, `ManifestBuilder`, `writeManifestFile`, `createManifestHeader`                                                                                                          | writing                                                               |
+| `detectCi`                                                                                                                                                                                | the `ci` block from environment variables (GitHub Actions, GitLab CI) |
+| `toCtrf`, `fromCtrf`, `toCtrfStatus`, `EXTRA_NAMESPACE`                                                                                                                                   | CTRF                                                                  |
+| `fromPlaywrightReport`, `fromVitestScreenshots`, `fromJestImageSnapshots`, `fromCypressVisualRegression`, `fromBackstopReport`, `fromRoborazziResults`, `fromImageTriples`, `inferStatus` | converters                                                            |
+| `readPngSize`                                                                                                                                                                             | width and height from a PNG header                                    |
 
 ## License
 

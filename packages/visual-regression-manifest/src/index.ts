@@ -84,6 +84,32 @@ export {
   type PlaywrightTest,
 } from './convert/playwright';
 export {
+  fromVitestScreenshots,
+  parseVitestScreenshotName,
+  type FromVitestScreenshotsOptions,
+} from './convert/vitest';
+export {
+  fromJestImageSnapshots,
+  type FromJestImageSnapshotOptions,
+} from './convert/jest-image-snapshot';
+export {
+  fromCypressVisualRegression,
+  type FromCypressVisualRegressionOptions,
+} from './convert/cypress-visual-regression';
+export {
+  fromBackstopReport,
+  type BackstopPair,
+  type BackstopReport,
+  type BackstopTest,
+  type FromBackstopReportOptions,
+} from './convert/backstop';
+export {
+  fromRoborazziResults,
+  type FromRoborazziResultsOptions,
+  type RoborazziResult,
+  type RoborazziResults,
+} from './convert/roborazzi';
+export {
   fromCtrf,
   toCtrf,
   toCtrfStatus,
