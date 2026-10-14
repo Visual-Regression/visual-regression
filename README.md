@@ -1,6 +1,12 @@
-# visual-regression
+<p align="center">
+  <a href="https://visual-regression.dev">
+    <img src="apps/site/public/brand/mark.svg" alt="visual-regression.dev" width="96" height="96">
+  </a>
+</p>
 
-The home of [visual-regression.dev](https://visual-regression.dev): a vendor-neutral place to learn visual regression testing, compare the tools, and share one run manifest between them.
+<h1 align="center">visual-regression</h1>
+
+<p align="center">The home of <a href="https://visual-regression.dev">visual-regression.dev</a>: a vendor-neutral place to learn visual regression testing, compare the tools, and share one run manifest between them.</p>
 
 | Path | What it is |
 | --- | --- |
