@@ -1,10 +1,10 @@
 // Cloudflare Workers config for the static site. The Worker has no code of its
 // own: it only serves the `nuxt generate` output as static assets. Deployed by
-// Cloudflare's git-connected Workers Builds (production on `main`, a preview URL
-// per branch), see `.github/workflows/site.yml` for what runs on GitHub.
+// `wrangler deploy` from `.github/workflows/site.yml` on every push to `main`;
+// the first deploy creates the Worker.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "visual-regression-dev",
+  "name": "visual-regression",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": ".output/public",
