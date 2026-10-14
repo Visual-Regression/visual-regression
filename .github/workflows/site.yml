@@ -59,8 +59,8 @@ jobs:
       # Same job as the build, so the deployed output is exactly what was built
       # (no second runner, no second install: billed minutes). Static assets on
       # a Worker named in `apps/site/wrangler.jsonc`; the first deploy creates
-      # it. Skipped until the Cloudflare secrets exist in the repository, so the
-      # check stays green.
+      # it. Skipped until the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+      # repository secrets exist, so the check stays green.
       - name: Deploy to Cloudflare
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && env.CLOUDFLARE_API_TOKEN != '' }}
         run: pnpm --filter @visual-regression/site exec wrangler deploy
