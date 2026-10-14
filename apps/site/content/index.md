@@ -5,6 +5,9 @@ seo:
 ---
 
 ::u-page-hero
+#headline
+:brand-mark{class="mx-auto size-16"}
+
 #title
 Visual regression testing, explained
 
