@@ -108,10 +108,19 @@ const describe = (heading) => {
     .split(/^## /m)
     .slice(1)
     .find((s) => s.startsWith(heading + '\n'));
+  // the first prose line: not a heading, a table row or anything inside a
+  // code fence (a section may open with a sub-heading or an example)
+  let inFence = false;
   const para = first
     ?.split('\n')
     .slice(1)
-    .find((l) => l.trim() && !l.startsWith('```'));
+    .find((l) => {
+      if (l.startsWith('```')) {
+        inFence = !inFence;
+        return false;
+      }
+      return !inFence && l.trim() && !/^(#|\|)/.test(l.trim());
+    });
   const plain =
     para?.replace(/[`*_[\]]/g, '').replace(/\(https?:[^)]+\)/g, '') ?? '';
   // the first sentence, so the description never stops mid-thought

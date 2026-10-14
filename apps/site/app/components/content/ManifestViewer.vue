@@ -305,7 +305,7 @@ const reset = () => {
     <div class="not-prose my-6 space-y-4">
       <div
         v-if="manifests.length === 0"
-        class="rounded-lg border-2 border-dashed p-8 text-center transition"
+        class="rounded-lg border-2 border-dashed p-6 text-center transition sm:p-8"
         :class="dragging ? 'border-primary bg-primary/5' : 'border-default'"
         @dragover.prevent="dragging = true"
         @dragleave.prevent="dragging = false"
@@ -314,7 +314,7 @@ const reset = () => {
         <UIcon name="i-lucide-folder-input" class="mx-auto mb-3 size-8 text-muted" />
         <p class="font-medium">Drop the run folder here</p>
         <p class="mt-1 text-sm text-muted">
-          The folder that holds <code>visual-regression-manifest.json</code> and the
+          The folder that holds <code class="break-all">visual-regression-manifest.json</code> and the
           screenshots. Nothing is uploaded.
         </p>
         <label class="mt-4 inline-block">
@@ -396,7 +396,7 @@ const reset = () => {
             </div>
             <p v-if="current.test.titlePath.length || current.test.filePath" class="text-sm text-muted">
               {{ current.test.titlePath.join(' › ') }}
-              <template v-if="current.test.filePath"> <code>{{ current.test.filePath }}</code></template>
+              <template v-if="current.test.filePath"> <code class="break-all">{{ current.test.filePath }}</code></template>
               <template v-if="current.test.retry > 0"> · attempt {{ current.test.retry + 1 }}</template>
             </p>
             <p v-if="current.message" class="text-sm">{{ current.message }}</p>
@@ -414,27 +414,27 @@ const reset = () => {
               </div>
               <div class="flex items-center gap-3 text-xs text-muted">
                 <span>baseline</span>
-                <input v-model.number="slider" type="range" min="0" max="100" class="w-64 accent-primary" aria-label="Compare baseline and actual" />
+                <input v-model.number="slider" type="range" min="0" max="100" class="min-w-0 flex-1 accent-primary sm:max-w-64" aria-label="Compare baseline and actual" />
                 <span>actual</span>
               </div>
             </div>
             <div v-else class="flex flex-wrap gap-4">
               <figure v-if="current.urls.baseline">
-                <img :src="current.urls.baseline" alt="Baseline" class="max-h-96 rounded border border-default" />
+                <img :src="current.urls.baseline" alt="Baseline" class="max-h-96 max-w-full rounded border border-default" />
                 <figcaption class="mt-1 text-xs text-muted">baseline</figcaption>
               </figure>
               <figure v-if="current.urls.actual">
-                <img :src="current.urls.actual" alt="Actual" class="max-h-96 rounded border border-default" />
+                <img :src="current.urls.actual" alt="Actual" class="max-h-96 max-w-full rounded border border-default" />
                 <figcaption class="mt-1 text-xs text-muted">actual</figcaption>
               </figure>
               <p v-if="!current.urls.baseline && !current.urls.actual" class="text-sm text-muted">
                 No image files for this entry among what was dropped
-                (<code>{{ current.images.baseline.path }}</code>).
+                (<code class="break-all">{{ current.images.baseline.path }}</code>).
               </p>
             </div>
             <figure v-if="current.urls.diff">
-              <img :src="current.urls.diff" alt="Diff" class="max-h-96 rounded border border-default" />
-              <figcaption class="mt-1 text-xs text-muted">diff · {{ current.images.diff.path }}</figcaption>
+              <img :src="current.urls.diff" alt="Diff" class="max-h-96 max-w-full rounded border border-default" />
+              <figcaption class="mt-1 break-all text-xs text-muted">diff · {{ current.images.diff.path }}</figcaption>
             </figure>
           </section>
         </div>
