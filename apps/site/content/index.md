@@ -9,10 +9,10 @@ seo:
 :brand-mark{class="mx-auto size-16"}
 
 #title
-Visual regression testing, explained
+:hero-headline
 
 #description
-Screenshots catch what assertions miss. This site explains how visual regression testing works, compares the tools honestly, and documents one run manifest any tool can write and any review tool can read.
+Screenshots catch what assertions miss. This site explains how visual regression testing works, compares the tools, and documents one run manifest any tool can write and any review tool can read.
 
 #links
   :::u-button
@@ -34,6 +34,28 @@ Screenshots catch what assertions miss. This site explains how visual regression
   ---
   The manifest
   :::
+::
+
+::u-page-section
+#title
+Start here
+
+#description
+A diff you can't explain is a flake you can't fix. Six short chapters, in order, take you from the idea to a suite people trust.
+
+#default
+:learn-path
+::
+
+::u-page-section
+#title
+The tools
+
+#description
+Thirty-one tools in one table, every claim sourced from the vendor's own docs. Three of them, to show what the columns mean:
+
+#default
+:tools-teaser
 ::
 
 ::u-page-section
