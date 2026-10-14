@@ -1,19 +1,11 @@
-// Cloudflare Workers config for the static site. The Worker has no code of its
-// own: it only serves the `nuxt generate` output as static assets. Deployed by
-// `wrangler deploy` from `.github/workflows/site.yml` on every push to `main`;
-// the first deploy creates the Worker.
+// Cloudflare Pages config for the static site: the `nuxt generate` output is
+// uploaded as-is by `wrangler pages deploy` from `.github/workflows/site.yml`
+// on every push to `main`. The Pages project (`name`) and its custom domain
+// are set up in the Cloudflare dashboard; Pages serves `404.html` with a 404
+// status and handles trailing slashes on its own.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "visual-regression",
   "compatibility_date": "2026-10-01",
-  "assets": {
-    "directory": ".output/public",
-    // `nuxt generate` writes `404.html`; serve it with a 404 status instead of
-    // rewriting unknown paths to the home page.
-    "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash",
-  },
-  "observability": {
-    "enabled": false,
-  },
+  "pages_build_output_dir": ".output/public",
 }

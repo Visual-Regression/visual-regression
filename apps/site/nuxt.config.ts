@@ -17,7 +17,7 @@ export default defineNuxtConfig({
   },
 
   // Fully static: every route is prerendered by `nuxt generate` and served as
-  // Cloudflare Workers static assets (see `wrangler.jsonc`). No server at runtime.
+  // Cloudflare Pages static files (see `wrangler.jsonc`). No server at runtime.
   nitro: {
     prerender: {
       crawlLinks: true,

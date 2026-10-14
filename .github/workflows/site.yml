@@ -54,12 +54,12 @@ jobs:
       - name: Build (static generate)
         run: pnpm --filter @visual-regression/site build
       # Same job as the build, so the deployed output is exactly what was built
-      # (no second runner, no second install: billed minutes). Static assets on
-      # a Worker named in `apps/site/wrangler.jsonc`; the first deploy creates
-      # it. Local deploys read the same two names from `apps/site/.env`.
-      - name: Deploy to Cloudflare
+      # (no second runner, no second install: billed minutes). Project name and
+      # output directory come from `apps/site/wrangler.jsonc`. Local deploys
+      # read the same two secrets from `apps/site/.env`.
+      - name: Deploy to Cloudflare Pages
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: pnpm --filter @visual-regression/site exec wrangler deploy
+        run: pnpm --filter @visual-regression/site exec wrangler pages deploy --branch main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
