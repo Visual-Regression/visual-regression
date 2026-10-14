@@ -7,6 +7,8 @@ allowBuilds:
   sharp: true
   unrs-resolver: false
   vue-demi: false
+  # wrangler's runtime; only `wrangler deploy` of static assets is used
+  workerd: false
 overrides:
   "@rollup/pluginutils@4.2.1>picomatch": "4.0.7"
 patchedDependencies:

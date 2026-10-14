@@ -23,6 +23,7 @@
     "@frsource/prettier-config": "^1.11.0",
     "@nuxt/content": "^3.16.2",
     "@nuxt/kit": "^4.6.1",
-    "prettier": "3.9.9"
+    "prettier": "3.9.9",
+    "wrangler": "4.145.0"
   }
 }
