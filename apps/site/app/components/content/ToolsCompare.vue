@@ -5,8 +5,11 @@ const { data: tools } = await useAsyncData('tools', () =>
   queryCollection('tools').all(),
 );
 
-const category = ref<keyof typeof CATEGORIES | 'all'>('all');
-const onlyManifest = ref(false);
+// `/compare?category=mobile-native&manifest=1` preselects the filters (the learn track links this way)
+const query = useRoute().query;
+const fromQuery = String(query.category ?? '');
+const category = ref<keyof typeof CATEGORIES | 'all'>(fromQuery in CATEGORIES ? (fromQuery as keyof typeof CATEGORIES) : 'all');
+const onlyManifest = ref(query.manifest === '1');
 const onlyOpenSource = ref(false);
 
 const rows = computed(() =>

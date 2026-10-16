@@ -4,7 +4,7 @@ const WORDS = ['Pixels drift.', 'Fonts change.', 'Layouts break.', 'Colours shif
 const i = ref(0);
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const t = setInterval(() => (i.value = (i.value + 1) % WORDS.length), 2600);
+  const t = setInterval(() => (i.value = (i.value + 1) % WORDS.length), 1600);
   onBeforeUnmount(() => clearInterval(t));
 });
 </script>
