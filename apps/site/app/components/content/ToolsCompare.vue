@@ -12,6 +12,16 @@ const category = ref<keyof typeof CATEGORIES | 'all'>(fromQuery in CATEGORIES ? 
 const onlyManifest = ref(query.manifest === '1');
 const onlyOpenSource = ref(false);
 
+// `URL` is not exposed to Vue templates, so format source links here
+function sourceLabel(source: string) {
+  try {
+    const { hostname, pathname } = new URL(source);
+    return hostname + pathname;
+  } catch {
+    return source;
+  }
+}
+
 const rows = computed(() =>
   (tools.value ?? [])
     .filter((t) => category.value === 'all' || t.category === category.value)
@@ -147,7 +157,7 @@ const expanded = ref<string | null>(null);
                   Verified {{ tool.lastVerified }} against
                   <template v-for="(source, i) in tool.sources" :key="source">
                     <a :href="source" target="_blank" rel="noopener" class="underline">{{
-                      new URL(source).hostname + new URL(source).pathname
+                      sourceLabel(source)
                     }}</a><span v-if="i < tool.sources.length - 1">, </span>
                   </template>.
                   <a
